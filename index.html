@@ -45,40 +45,46 @@
         .kpi-v { font-size: 1.75rem; font-weight: 700; color: white; line-height: 1.2; }
         .pnd { font-size: 0.75rem; color: var(--accent-warning); margin-top: 4px; font-weight: 600; }
 
-        /* Special Visual Components: Bay Map Matrix Layout Grid */
-        .bay-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+        /* Split-Flex Section Layout for Bay Map Map + Summary Split */
+        .split-flex-container { display: flex; gap: 20px; align-items: stretch; }
+        .bay-grid-left { flex: 3; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .fleet-summary-right { flex: 1; background: #151f32; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+
         .bay-box { background: #151f32; border: 2px solid var(--border-color); border-radius: 8px; padding: 16px; position: relative; transition: border-color 0.2s; }
         .bay-box.occupied { border-color: var(--accent-color); }
         .bay-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; }
         .bay-name { font-weight: bold; color: var(--text-main); font-size: 1.1rem; }
         .bay-status-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
 
-        /* Specialized Action Drawer Layouts */
+        .summary-pill { background: #0f172a; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .summary-count { font-size: 1.25rem; font-weight: 800; color: var(--accent-warning); }
+
+        /* Input Form & Action Drawer Components */
         .manual-entry-box { border-radius: 8px; padding: 16px; margin-bottom: 20px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); }
         .manual-entry-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: flex-end; }
         
         input, select, textarea { background: #0f172a; border: 1px solid var(--border-color); color: white; padding: 10px 14px; border-radius: 6px; font-size: 0.9rem; width: 100%; outline: none; }
         input:focus, select:focus { border-color: var(--accent-color); }
 
-        /* Buttons styles */
+        /* Button UI Library */
         .btn-primary, .btn-secondary, .btn-success, .btn-danger { padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; transition: background 0.2s; white-space: nowrap; }
         .btn-primary { background: var(--accent-color); color: white; }
         .btn-secondary { background: transparent; border-color: var(--border-color); color: var(--text-main); }
         .btn-success { background: var(--accent-success); color: white; }
         .btn-danger { background: var(--accent-danger); color: white; }
 
-        /* Tab Switch Configuration Control */
+        /* Timeline Toggle Switching */
         .tab-toggle { background: transparent; border: none; color: var(--text-secondary); padding: 6px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; }
         .tab-toggle.active { background: var(--accent-color); color: white; }
 
-        /* Structured Data View Tables */
+        /* Structured Tables */
         .table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 8px; border: 1px solid var(--border-color); }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
         th { background: #151f32; padding: 14px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); }
         td { padding: 14px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
         tr:hover { background: rgba(255,255,255,0.01); }
 
-        /* Search Filter Ribbons Layout */
+        /* Query Ribbons Layout */
         .filter-ribbon { display: flex; gap: 16px; margin-bottom: 20px; background: rgba(0,0,0,0.15); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end; }
         .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
         .filter-group label { font-size: 0.75rem; font-weight: bold; color: var(--text-secondary); }
@@ -88,10 +94,10 @@
 
     <aside>
         <div>
-            <div class="brand"><i class="fa-solid fa-truck-ramp-box"></i> LogiTrack System</div>
+            <div class="brand"><i class="fa-solid fa-truck-ramp-box"></i> LogiTrack Terminal</div>
             <div class="user-profile">
-                <div style="font-size:0.85rem; font-weight:bold;">System Terminal</div>
-                <div style="font-size:0.75rem; color:var(--text-secondary);">ROOT PRIVILEGES</div>
+                <div style="font-size:0.85rem; font-weight:bold;">Master Terminal</div>
+                <div style="font-size:0.75rem; color:var(--text-secondary); text-transform: uppercase;" id="active-profile-badge">ADMIN CONSOLE</div>
             </div>
             <ul class="nav-links">
                 <li><a id="nav-dash" class="nav-item active"><i class="fa-solid fa-chart-line"></i> Operations Dashboard</a></li>
@@ -119,22 +125,33 @@
                 </div>
             </div>
 
-            <div class="kpi-row" style="margin-bottom: 24px;">
+            <div class="kpi-row" style="margin-bottom: 16px;">
                 <div class="kpi-grid-left">
                     <div class="kpi-sub-grid">
-                        <div class="kpi-card"><h4>PICKED</h4><p class="kpi-v" id="dash-v-picked">10</p><span class="pnd">PENDING: 6</span></div>
-                        <div class="kpi-card"><h4>PGI</h4><p class="kpi-v" id="dash-v-pgi">9</p><span class="pnd">PENDING: 1</span></div>
-                        <div class="kpi-card"><h4>INVOICED</h4><p class="kpi-v" id="dash-v-invoiced">6</p><span class="pnd">PENDING: 3</span></div>
+                        <div class="kpi-card"><h4>PICKED</h4><p class="kpi-v" id="dash-v-picked">0</p></div>
+                        <div class="kpi-card"><h4>PGI</h4><p class="kpi-v" id="dash-v-pgi">0</p></div>
+                        <div class="kpi-card"><h4>INVOICED</h4><p class="kpi-v" id="dash-v-invoiced">0</p></div>
                     </div>
                     <div class="kpi-sub-grid">
-                        <div class="kpi-card"><h4>DS PRINTING</h4><p class="kpi-v" id="dash-v-ds">1</p><span class="pnd">PENDING: 5</span></div>
-                        <div class="kpi-card"><h4>CHECKED</h4><p class="kpi-v" id="dash-v-checked">0</p><span class="pnd">PENDING: 1</span></div>
-                        <div class="kpi-card"><h4>LOADED</h4><p class="kpi-v" id="dash-v-loaded">0</p><span class="pnd">PENDING: 0</span></div>
+                        <div class="kpi-card"><h4>DS PRINTING</h4><p class="kpi-v" id="dash-v-ds">0</p></div>
+                        <div class="kpi-card"><h4>CHECKED</h4><p class="kpi-v" id="dash-v-checked">0</p></div>
+                        <div class="kpi-card" style="border-left: 3px solid var(--accent-success);"><h4>LOADED (COMPLETE)</h4><p class="kpi-v" id="dash-v-loaded">0</p></div>
                     </div>
                 </div>
                 <div class="kpi-card" style="flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
-                    <h4 style="margin-bottom: 8px;">TOTAL DISPATCHES (TARGET)</h4>
-                    <p style="font-size: 3.5rem; font-weight: 800; color: white; line-height: 1;" id="dash-v-target">16</p>
+                    <h4 style="margin-bottom: 8px; font-weight: bold;">TOTAL DISPATCHES (TARGET)</h4>
+                    <p style="font-size: 3.5rem; font-weight: 800; color: white; line-height: 1;" id="dash-v-target">0</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                <div class="kpi-card" style="border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.02); min-height: 90px;">
+                    <h4 style="color: var(--accent-warning);"><i class="fa-solid fa-clock-rotate-left"></i> Pending Trucks to be Loaded (From Master List)</h4>
+                    <p class="kpi-v" id="dash-v-pending-loading" style="color: var(--accent-warning);">0</p>
+                </div>
+                <div class="kpi-card" style="border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.02); min-height: 90px;">
+                    <h4 style="color: var(--accent-color);"><i class="fa-solid fa-warehouse"></i> Available Trucks (Currently Checked In Yard)</h4>
+                    <p class="kpi-v" id="dash-v-yard-trucks" style="color: var(--accent-color);">0</p>
                 </div>
             </div>
 
@@ -186,6 +203,10 @@
                         <div><label style="font-size:0.75rem; margin-bottom:4px; display:block;">Delivery Date</label><input type="date" id="m-del-date" required></div>
                         <div><label style="font-size:0.75rem; margin-bottom:4px; display:block;">Customer Name</label><input type="text" id="m-del-cust" required></div>
                         <div><label style="font-size:0.75rem; margin-bottom:4px; display:block;">Route Destination</label><input type="text" id="m-del-route" required placeholder="e.g., PASIG"></div>
+                        <div>
+                            <label style="font-size:0.75rem; margin-bottom:4px; display:block;">Required Truck Type</label>
+                            <select id="m-del-type"><option value="AUV">AUV</option><option value="4W">4W</option><option value="6W">6W</option><option value="10W">10W</option></select>
+                        </div>
                         <button type="submit" class="btn-success">Save Entry</button>
                     </form>
                 </div>
@@ -205,7 +226,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Delivery ID</th><th>Date</th><th>Customer</th><th>Route Description</th><th>Status Tracking</th><th>Bay Staging</th><th>Assigned Truck</th>
+                                <th>Delivery ID</th><th>Date</th><th>Customer</th><th>Route Description</th><th>Truck Type</th><th>Bay Staging</th><th>Assigned Truck ID</th>
                                 <th>Picked</th><th>PGI</th><th>Invoiced</th><th>DS Print</th><th>Checked</th><th>Loaded</th>
                             </tr>
                         </thead>
@@ -225,7 +246,11 @@
                 <div class="manual-entry-box">
                     <h3 style="font-size: 1rem; margin-bottom: 12px; color: var(--accent-warning);"><i class="fa-solid fa-truck-front"></i> Register Daily Fleet Asset Instance</h3>
                     <form id="truck-registry-form" class="manual-entry-form">
-                        <div><label style="font-size:0.75rem; display:block; margin-bottom:4px;">Truck Code ID</label><input type="text" id="t-code" placeholder="e.g., AUV-1" required></div>
+                        <div>
+                            <label style="font-size:0.75rem; display:block; margin-bottom:4px;">Truck Type Class</label>
+                            <select id="t-type"><option value="AUV">AUV</option><option value="4W">4W</option><option value="6W">6W</option><option value="10W">10W</option></select>
+                        </div>
+                        <div><label style="font-size:0.75rem; display:block; margin-bottom:4px;">Truck Code Designation</label><input type="text" id="t-code" placeholder="e.g., AUV-1" required></div>
                         <div><label style="font-size:0.75rem; display:block; margin-bottom:4px;">Registered Plate Number</label><input type="text" id="t-plate" placeholder="e.g., NHN-675" required></div>
                         <div>
                             <label style="font-size:0.75rem; display:block; margin-bottom:4px;">Current Operational Status</label>
@@ -249,7 +274,7 @@
                 <div class="table-wrapper">
                     <table>
                         <thead>
-                            <tr><th>Truck Code Identity</th><th>Registered Plate Number</th><th>Availability Status</th><th>Registration Date Flag</th></tr>
+                            <tr><th>Truck Model Type</th><th>Truck Code Identity</th><th>Registered Plate Number</th><th>Availability Status</th><th>Registration Date Flag</th></tr>
                         </thead>
                         <tbody id="trucks-table-body">
                             </tbody>
@@ -260,13 +285,24 @@
 
         <div id="panel-bays" class="view-container hidden">
             <div class="view-panel">
-                <header style="margin-bottom: 12px;">
+                <header style="margin-bottom: 20px;">
                     <h1 style="font-size: 1.5rem;">Bay Loading Dock Layout Matrix Map</h1>
-                    <p style="color: var(--text-secondary); font-size: 0.85rem;">Realtime structural layout allocation representation mapping for loading zones.</p>
                 </header>
 
-                <div class="bay-grid-container" id="bays-matrix-output">
+                <div class="split-flex-container">
+                    <div class="bay-grid-left" id="bays-matrix-output">
+                        </div>
+
+                    <div class="fleet-summary-right">
+                        <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; color: var(--accent-warning);">
+                            <i class="fa-solid fa-list-check"></i> Yard Availability Summary
+                        </h3>
+                        <div class="summary-pill"><span>AUV Available Fleet</span><span class="summary-count" id="sum-count-auv">0</span></div>
+                        <div class="summary-pill"><span>4W Available Fleet</span><span class="summary-count" id="sum-count-4w">0</span></div>
+                        <div class="summary-pill"><span>6W Available Fleet</span><span class="summary-count" id="sum-count-6w">0</span></div>
+                        <div class="summary-pill"><span>10W Available Fleet</span><span class="summary-count" id="sum-count-10w">0</span></div>
                     </div>
+                </div>
             </div>
         </div>
 
@@ -283,8 +319,13 @@
                         <div><label style="font-size:0.75rem; display:block; margin-bottom:4px;">Full Legal Name</label><input type="text" id="u-fullname" placeholder="John Doe" required></div>
                         <div><label style="font-size:0.75rem; display:block; margin-bottom:4px;">Access Password (Plaintext View Token)</label><input type="text" id="u-password" placeholder="SecurePass123" required></div>
                         <div>
-                            <label style="font-size:0.75rem; display:block; margin-bottom:4px;">Assigned Access Profile Group Role</label>
-                            <select id="u-role"><option value="Operator">Logistics Operator</option><option value="Supervisor">Shift Supervisor</option><option value="Admin">System Administrator</option></select>
+                            <label style="font-size:0.75rem; display:block; margin-bottom:4px;">Assigned Authorization Profile Group Role</label>
+                            <select id="u-role">
+                                <option value="Admin">Admin</option>
+                                <option value="PGI">PGI Role</option>
+                                <option value="AR">AR Role</option>
+                                <option value="Transport">Transport Role</option>
+                            </select>
                         </div>
                         <button type="submit" class="btn-primary"><i class="fa-solid fa-user-shield"></i> Save Profile Account</button>
                     </form>
@@ -305,22 +346,26 @@
     </main>
 
     <script>
-        // Core Reactive In-Memory Dataset Layers (Defaults matches your test cases)
+        // Reactive Core Dataset Stores (Synced to Target Match Cases)
         let datasetDeliveries = [
-            { id: "10129043", date: "2026-06-07", customer: "ASDFSDF", route: "MANILA", status: "ACTIVE", bay: "BAY 1 | A", truck: "AUV-1", is_picked: true, is_pgi: true, is_invoiced: false, is_ds_printed: false, is_checked: false, is_loaded: false },
-            { id: "10129033", date: "2026-06-07", customer: "PBD INFRA", route: "CALOOCAN", status: "ACTIVE", bay: "BAY 1 | B", truck: "4W-1", is_picked: true, is_pgi: true, is_invoiced: true, is_ds_printed: false, is_checked: false, is_loaded: false },
-            { id: "10129041", date: "2026-06-07", customer: "SDFDSF CORP", route: "PASIG", status: "ACTIVE", bay: "BAY 2 | A", truck: "6W-1", is_picked: true, is_pgi: true, is_invoiced: true, is_ds_printed: true, is_checked: false, is_loaded: false }
+            { id: "10129043", date: "2026-06-07", customer: "ASDFSDF", route: "MANILA", type: "AUV", bay: "BAY 1 | A", truck: "AUV-1", is_picked: true, is_pgi: true, is_invoiced: false, is_ds_printed: false, is_checked: false, is_loaded: false },
+            { id: "10129033", date: "2026-06-07", customer: "PBD INFRA", route: "CALOOCAN", type: "4W", bay: "BAY 1 | B", truck: "4W-1", is_picked: true, is_pgi: true, is_invoiced: true, is_ds_printed: false, is_checked: false, is_loaded: false },
+            { id: "10129041", date: "2026-06-07", customer: "SDFDSF CORP", route: "PASIG", type: "6W", bay: "BAY 2 | A", truck: "6W-1", is_picked: true, is_pgi: true, is_invoiced: true, is_ds_printed: true, is_checked: false, is_loaded: false },
+            { id: "10129099", date: "2026-06-07", customer: "MANILA FLOUR", route: "QUEZON CITY", type: "10W", bay: "BAY 3 | A", truck: "UNASSIGNED", is_picked: true, is_pgi: true, is_invoiced: true, is_ds_printed: true, is_checked: true, is_loaded: false }
         ];
 
         let datasetTrucks = [
-            { code: "AUV-1", plate: "NHN-675", status: "AVAILABLE", date: "2026-06-07" },
-            { code: "4W-1", plate: "NKB-1234", status: "AVAILABLE", date: "2026-06-07" },
-            { code: "6W-1", plate: "RST-5678", status: "AVAILABLE", date: "2026-06-07" }
+            { type: "AUV", code: "AUV-1", plate: "NHN-675", status: "AVAILABLE", date: "2026-06-07" },
+            { type: "4W", code: "4W-1", plate: "NKB-1234", status: "AVAILABLE", date: "2026-06-07" },
+            { type: "6W", code: "6W-1", plate: "RST-5678", status: "AVAILABLE", date: "2026-06-07" }
         ];
 
+        // Restructured Identity User Database
         let datasetUsers = [
-            { username: "admin", fullname: "Root Administrator Profile", role: "Admin", password: "RootPasswordMasterSecurity" },
-            { username: "j_operator", fullname: "John Operator Crew", role: "Operator", password: "OpPassphrase2026" }
+            { username: "admin", fullname: "System Administrator Core", role: "Admin", password: "RootPasswordMasterSecurity" },
+            { username: "pgi_user", fullname: "PGI Warehouse Operator", role: "PGI", password: "PgiExecutionPass2026" },
+            { username: "ar_user", fullname: "Accounts Receivable Clerk", role: "AR", password: "ArInvoicingSecured" },
+            { username: "trans_mgr", fullname: "Transport Logistics Coordinator", role: "Transport", password: "TransportFleetLogi" }
         ];
 
         const storageBays = [
@@ -343,7 +388,7 @@
             });
         });
 
-        // Hide/Show Toggle Controls for Planning Drawers
+        // Visibility Toggle Switches for Planning Drawer Overlays
         document.getElementById("toggle-excel-btn").addEventListener("click", () => {
             document.getElementById("excel-importer-drawer").classList.toggle("hidden");
             document.getElementById("manual-entry-drawer").classList.add("hidden");
@@ -353,7 +398,7 @@
             document.getElementById("excel-importer-drawer").classList.add("hidden");
         });
 
-        // Date Filter Change Hooks (Updates entire operational layout concurrently when date scales shift)
+        // Unified Change Listeners to maintain date-filtering alignment across layouts
         document.getElementById('dash-filter-date').addEventListener('change', (e) => {
             document.getElementById('plan-filter-date').value = e.target.value;
             document.getElementById('truck-filter-date').value = e.target.value;
@@ -370,28 +415,30 @@
             syncRenderViews();
         });
 
-        // Search Input Filtering Triggers
+        // Search Filters Core Hooks
         document.getElementById('plan-search-input').addEventListener('input', () => renderPlanningMatrix());
         document.getElementById('truck-search-input').addEventListener('input', () => renderTrucksGrid());
 
-        // ---------------- BUSINESS LOGIC DATA MUTATOR ENGINES ----------------
+        // ---------------- SYSTEM DATA MUTATOR PIPELINES ----------------
 
-        // Manual Dispatch Submission Handling Block
+        // Manual Dispatch Submission Engine
         document.getElementById('manual-delivery-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const idVal = document.getElementById('m-del-id').value.trim();
             const dateVal = document.getElementById('m-del-date').value;
             const custVal = document.getElementById('m-del-cust').value.trim();
             const routeVal = document.getElementById('m-del-route').value.trim().toUpperCase();
+            const typeVal = document.getElementById('m-del-type').value;
 
             if (datasetDeliveries.some(d => d.id === idVal)) {
-                alert(`Constraint Conflict: Delivery ID ${idVal} already created inside system register logs.`);
+                alert(`Conflict: Delivery ID ${idVal} already exists inside active system databases.`);
                 return;
             }
 
             datasetDeliveries.push({
-                id: idVal, date: dateVal, customer: custVal, route: routeVal, status: "ACTIVE",
-                bay: "UNASSIGNED", truck: "UNASSIGNED", is_picked: false, is_pgi: false, is_invoiced: false, is_ds_printed: false, is_checked: false, is_loaded: false
+                id: idVal, date: dateVal, customer: custVal, route: routeVal, type: typeVal,
+                status: "ACTIVE", bay: "UNASSIGNED", truck: "UNASSIGNED",
+                is_picked: false, is_pgi: false, is_invoiced: false, is_ds_printed: false, is_checked: false, is_loaded: false
             });
 
             document.getElementById('manual-delivery-form').reset();
@@ -402,19 +449,20 @@
         // Daily Constraint Fleet Asset Entry Mutator
         document.getElementById('truck-registry-form').addEventListener('submit', (e) => {
             e.preventDefault();
+            const typeVal = document.getElementById('t-type').value;
             const codeVal = document.getElementById('t-code').value.trim().toUpperCase();
             const plateVal = document.getElementById('t-plate').value.trim().toUpperCase();
             const statusVal = document.getElementById('t-status').value;
             const targetDate = document.getElementById('truck-filter-date').value;
 
-            // Strict Compound Verification Matching PostgreSQL Constraint Rules (Code + Entry Date)
+            // Enforcement of Daily Unique Constraint ruleset
             const existsToday = datasetTrucks.some(t => t.code === codeVal && t.date === targetDate);
             if (existsToday) {
-                alert(`Error inserting truck: duplicate key value violates unique constraint "unique_truck_per_day" for date allocation window: [${targetDate}].`);
+                alert(`Error inserting truck: duplicate key value violates unique constraint "unique_truck_per_day" for date window: [${targetDate}].`);
                 return;
             }
 
-            datasetTrucks.push({ code: codeVal, plate: plateVal, status: statusVal, date: targetDate });
+            datasetTrucks.push({ type: typeVal, code: codeVal, plate: plateVal, status: statusVal, date: targetDate });
             document.getElementById('truck-registry-form').reset();
             syncRenderViews();
         });
@@ -428,7 +476,7 @@
             const roleVal = document.getElementById('u-role').value;
 
             if(datasetUsers.some(u => u.username === usernameVal)) {
-                alert("Administrative Constraint: Account user handle reference identity name already active.");
+                alert("Administrative Error: Account username handle reference is already active inside system identity registries.");
                 return;
             }
 
@@ -438,7 +486,7 @@
         });
 
         function removeUserAccount(userKeyName) {
-            if(userKeyName === 'admin') { alert("Critical Security Failure: Root administrative profiles cannot be erased."); return; }
+            if(userKeyName === 'admin') { alert("Critical Block: Root administrative profiles cannot be revoked."); return; }
             datasetUsers = datasetUsers.filter(u => u.username !== userKeyName);
             renderUsersDashboard();
         }
@@ -447,6 +495,26 @@
             const index = datasetDeliveries.findIndex(d => d.id === deliveryId);
             if (index !== -1) {
                 datasetDeliveries[index][propertyKey] = checkedStatus;
+                
+                // Automation: Auto-assign dynamic fleet assets when loaded milestone flag fires active
+                if(propertyKey === 'is_loaded' && checkedStatus === true) {
+                    const typeNeeded = datasetDeliveries[index].type;
+                    const dateNeeded = datasetDeliveries[index].date;
+                    
+                    // Match available vehicle parameters matching exact shift criteria
+                    const matchFleet = datasetTrucks.find(t => t.type === typeNeeded && t.date === dateNeeded && t.status === "AVAILABLE");
+                    if(matchFleet) {
+                        datasetDeliveries[index].truck = matchFleet.code;
+                        matchFleet.status = "ON_ROUTE"; // Toggle vehicle usage state
+                    }
+                } else if(propertyKey === 'is_loaded' && checkedStatus === false) {
+                    // Reset assigned references if unchecked
+                    const currentAssignedCode = datasetDeliveries[index].truck;
+                    const matchFleet = datasetTrucks.find(t => t.code === currentAssignedCode && t.date === datasetDeliveries[index].date);
+                    if(matchFleet) matchFleet.status = "AVAILABLE";
+                    datasetDeliveries[index].truck = "UNASSIGNED";
+                }
+
                 syncRenderViews();
             }
         }
@@ -465,9 +533,10 @@
         function renderDashboardCards() {
             const activeDate = document.getElementById('dash-filter-date').value;
             const subSet = datasetDeliveries.filter(d => d.date === activeDate);
+            const yardTrucksCount = datasetTrucks.filter(t => t.date === activeDate && t.status === "AVAILABLE").length;
 
-            // Compute aggregations matching view selection framework parameters
-            const counts = { picked: 0, pgi: 0, invoiced: 0, ds: 0, checked: 0, loaded: 0 };
+            // Compute aggregations
+            const counts = { picked: 0, pgi: 0, invoiced: 0, ds: 0, checked: 0, loaded: 0, pendingLoading: 0 };
             subSet.forEach(d => {
                 if(d.is_picked) counts.picked++;
                 if(d.is_pgi) counts.pgi++;
@@ -475,6 +544,9 @@
                 if(d.is_ds_printed) counts.ds++;
                 if(d.is_checked) counts.checked++;
                 if(d.is_loaded) counts.loaded++;
+                
+                // Smart Analytics Tracking Strategy: If checked but not yet flagged loaded, count as pending vehicle processing
+                if(d.is_checked && !d.is_loaded) counts.pendingLoading++;
             });
 
             document.getElementById('dash-v-target').innerText = subSet.length;
@@ -484,6 +556,10 @@
             document.getElementById('dash-v-ds').innerText = counts.ds;
             document.getElementById('dash-v-checked').innerText = counts.checked;
             document.getElementById('dash-v-loaded').innerText = counts.loaded;
+
+            // Analytics Reconciliation Injectors
+            document.getElementById('dash-v-pending-loading').innerText = counts.pendingLoading;
+            document.getElementById('dash-v-yard-trucks').innerText = yardTrucksCount;
         }
 
         function renderPlanningMatrix() {
@@ -508,9 +584,9 @@
                     <td>${d.date}</td>
                     <td>${d.customer}</td>
                     <td>${d.route}</td>
-                    <td><span style="color:var(--accent-success)">${d.status}</span></td>
-                    <td>${d.bay}</td>
-                    <td>${d.truck}</td>
+                    <td><span style="color:var(--text-secondary); font-weight:bold; background:#0f172a; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${d.type}</span></td>
+                    <td><span style="color:var(--accent-color)">${d.bay}</span></td>
+                    <td><strong style="color:${d.truck !== 'UNASSIGNED' ? 'var(--accent-success)' : 'var(--text-secondary)'}">${d.truck}</strong></td>
                     <td><input type="checkbox" ${d.is_picked ? 'checked' : ''} onchange="toggleMilestoneProperty('${d.id}', 'is_picked', this.checked)"></td>
                     <td><input type="checkbox" ${d.is_pgi ? 'checked' : ''} onchange="toggleMilestoneProperty('${d.id}', 'is_pgi', this.checked)"></td>
                     <td><input type="checkbox" ${d.is_invoiced ? 'checked' : ''} onchange="toggleMilestoneProperty('${d.id}', 'is_invoiced', this.checked)"></td>
@@ -531,12 +607,12 @@
 
             const tbody = document.getElementById('trucks-table-body');
             if(activeFleet.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">No active transport fleet entries registered for this shift date.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">No active transport fleet entries registered for this shift date.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = activeFleet.map(t => `
-                <tr><td><strong>${t.code}</strong></td><td>${t.plate}</td><td><span style="color:var(--accent-warning)">${t.status}</span></td><td>${t.date}</td></tr>
+                <tr><td><span style="font-weight:bold; color:var(--accent-color)">${t.type}</span></td><td><strong>${t.code}</strong></td><td>${t.plate}</td><td><span style="color:var(--accent-warning)">${t.status}</span></td><td>${t.date}</td></tr>
             `).join('');
         }
 
@@ -545,6 +621,7 @@
             const dayDeliveries = datasetDeliveries.filter(d => d.date === activeDate);
             const container = document.getElementById('bays-matrix-output');
 
+            // Render Left Matrix Cards
             container.innerHTML = storageBays.map(bay => {
                 const assignedManifest = dayDeliveries.find(d => d.bay === bay.id);
                 const isOccupied = !!assignedManifest;
@@ -562,12 +639,22 @@
                             <div style="background:rgba(255,255,255,0.03); padding:8px; border-radius:4px; font-size:0.8rem;">
                                 <div><strong>ID:</strong> ${assignedManifest.id}</div>
                                 <div><strong>Dest:</strong> ${assignedManifest.route}</div>
+                                <div><strong>Type:</strong> ${assignedManifest.type}</div>
                                 <div><strong>Truck:</strong> ${assignedManifest.truck}</div>
                             </div>
                         ` : `<div style="font-size:0.8rem; font-style:italic; color:rgba(255,255,255,0.2)">Awaiting transport flow staging assignment</div>`}
                     </div>
                 `;
             }).join('');
+
+            // Calculate and render Right Sidebar counts by Fleet Type Class
+            const fleetToday = datasetTrucks.filter(t => t.date === activeDate && t.status === "AVAILABLE");
+            const modelClasses = ["AUV", "4W", "6W", "10W"];
+            
+            modelClasses.forEach(className => {
+                const classCount = fleetToday.filter(t => t.type === className).length;
+                document.getElementById(`sum-count-${className.toLowerCase()}`).innerText = `${className} - ${classCount} AVAILABLE`;
+            });
         }
 
         function renderUsersDashboard() {
@@ -590,6 +677,7 @@
         // Segmented ChartJS Interface Orchestration Implementation
         const labelsDay = ['5 AM', '6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'];
         const labelsNight = ['5 PM', '6 PM', '7 PM', '8 PM', '9 PM', '10 PM', '11 PM', '12 AM', '1 AM', '2 AM', '3 AM', '4 AM'];
+        let activeGraphShift = 'day';
 
         const ctx = document.getElementById('milestoneTimelineChart').getContext('2d');
         const milestoneChart = new Chart(ctx, {
@@ -622,7 +710,6 @@
             const activeDate = document.getElementById('dash-filter-date').value;
             const currentLabels = activeGraphShift === 'day' ? labelsDay : labelsNight;
 
-            // Generate shift matrix checks
             const isNight = (activeGraphShift === 'night');
             const hasDataForMock = (activeDate === "2026-06-07" && isNight);
 
@@ -631,7 +718,7 @@
             const invoiceMap = hasDataForMock ? [0,0,0,0,1,5,6,0,0,0,0,0] : Array(12).fill(0);
             const dsMap = hasDataForMock ? [0,0,0,0,1,1,1,0,0,0,0,0] : Array(12).fill(0);
 
-            // Dynamic evaluation for truck registration blocks matching active hour entries exactly
+            // Dynamic strict chart evaluation matching the exact hour registered
             const trucksMap = currentLabels.map(hour => {
                 const hourTargetMatch = (hour === '10 PM');
                 const hasTrucksRegistered = datasetTrucks.some(t => t.date === activeDate);
@@ -646,7 +733,7 @@
             milestoneChart.update();
         }
 
-        // Click Controls Switching Between Shift Ranges
+        // Shift view range toggles
         document.getElementById('shift-day-btn').addEventListener('click', () => {
             activeGraphShift = 'day';
             document.getElementById('shift-day-btn').className = 'tab-toggle active';
@@ -663,7 +750,7 @@
             updateChartTimelineData();
         });
 
-        // Initialize UI Views
+        // Initialize view states
         syncRenderViews();
     </script>
 </body>
