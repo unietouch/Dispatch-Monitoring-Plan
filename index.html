@@ -1,38 +1,360 @@
-<div style="display: flex; gap: 16px; align-items: stretch; margin-bottom: 24px;">
-    <div style="flex: 3; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-            <div class="kpi-card"><h4>PICKED</h4><p class="kpi-v">10</p><span class="pnd">PENDING: 6</span></div>
-            <div class="kpi-card"><h4>PGI</h4><p class="kpi-v">9</p><span class="pnd">PENDING: 1</span></div>
-            <div class="kpi-card"><h4>INVOICED</h4><p class="kpi-v">6</p><span class="pnd">PENDING: 3</span></div>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-            <div class="kpi-card"><h4>DS PRINTING</h4><p class="kpi-v">1</p><span class="pnd">PENDING: 5</span></div>
-            <div class="kpi-card"><h4>CHECKED</h4><p class="kpi-v">0</p><span class="pnd">PENDING: 1</span></div>
-            <div class="kpi-card"><h4>LOADED</h4><p class="kpi-v">0</p><span class="pnd">PENDING: 0</span></div>
-        </div>
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogiTrack System - Transport Fleet Terminal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+        }
 
-    <div class="kpi-card" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid rgba(255,255,255,0.08);">
-        <h4 style="letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 8px;">TOTAL DISPATCHES (TARGET)</h4>
-        <p style="font-size: 3.5rem; font-weight: 800; color: #fff; line-height: 1; margin: 0;">16</p>
-    </div>
-</div>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
 
-<div class="view-panel" style="padding: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin: 0; font-size: 1.1rem; color: #fff;"><i class="fa-solid fa-chart-bar"></i> Dispatch Milestone Timeline Tracking</h3>
-        <div class="toggle-button-group" style="display: flex; background: #1e293b; padding: 4px; border-radius: 8px;">
-            <button id="shift-day-btn" class="tab-toggle active" onclick="switchGraphShift('day')">Day Shift (5 AM - 5 PM)</button>
-            <button id="shift-night-btn" class="tab-toggle" onclick="switchGraphShift('night')">Night Shift (5 PM - 4 AM)</button>
+        /* Navigation Layout Components */
+        aside { width: 260px; background-color: #0b0f19; border-right: 1px solid var(--border-color); padding: 24px; display: flex; flex-direction: column; justify-content: space-between; }
+        .brand { display: flex; align-items: center; gap: 10px; font-size: 1.25rem; font-weight: bold; color: var(--accent-color); margin-bottom: 32px; }
+        .user-profile { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-bottom: 24px; border: 1px solid var(--border-color); }
+        .nav-links { list-style: none; display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--text-secondary); text-decoration: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .nav-item:hover, .nav-item.active { background: var(--accent-color); color: white; }
+
+        /* Main Workspace Controls */
+        main { flex-grow: 1; padding: 32px; max-width: 1600px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 24px; }
+        .view-panel { background-color: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); padding: 24px; }
+        .hidden { display: none !important; }
+
+        /* Grid Alignment Matrix CSS */
+        .kpi-row { display: flex; gap: 16px; align-items: stretch; }
+        .kpi-grid-left { flex: 3; display: flex; flex-direction: column; gap: 12px; }
+        .kpi-sub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        
+        .kpi-card { background: #151f32; border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; min-height: 105px; }
+        .kpi-card h4 { font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 0.05em; margin-bottom: 6px; text-transform: uppercase; }
+        .kpi-v { font-size: 1.75rem; font-weight: 700; color: white; line-height: 1.2; }
+        .pnd { font-size: 0.75rem; color: var(--accent-warning); margin-top: 4px; font-weight: 600; }
+
+        /* Specialized Action Drawer Layouts */
+        .manual-entry-box { border-radius: 8px; padding: 16px; margin-bottom: 20px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); }
+        .manual-entry-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: flex-end; }
+        
+        input, select, textarea { background: #0f172a; border: 1px solid var(--border-color); color: white; padding: 10px 14px; border-radius: 6px; font-size: 0.9rem; width: 100%; outline: none; }
+        input:focus, select:focus { border-color: var(--accent-color); }
+
+        /* Buttons styles */
+        .btn-primary, .btn-secondary, .btn-success { padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; transition: background 0.2s; }
+        .btn-primary { background: var(--accent-color); color: white; }
+        .btn-secondary { background: transparent; border-color: var(--border-color); color: var(--text-main); }
+        .btn-success { background: var(--accent-success); color: white; }
+        .btn-primary:hover { background: #2563eb; }
+
+        /* Tab Switch Configuration Control */
+        .tab-toggle { background: transparent; border: none; color: var(--text-secondary); padding: 6px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; }
+        .tab-toggle.active { background: var(--accent-color); color: white; }
+
+        /* Structured Data View Tables */
+        .table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 8px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        th { background: #151f32; padding: 14px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); }
+        td { padding: 14px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+        tr:hover { background: rgba(255,255,255,0.01); }
+
+        /* Checkbox Layout Rows */
+        .filter-ribbon { display: flex; gap: 16px; margin-bottom: 20px; background: rgba(0,0,0,0.15); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .chk-container { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text-main); }
+        .chk-container input { width: auto; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div>
+            <div class="brand"><i class="fa-solid fa-truck-ramp-box"></i> LogiTrack System</div>
+            <div class="user-profile">
+                <div style="font-size:0.85rem; font-weight:bold;">admin</div>
+                <div style="font-size:0.75rem; color:var(--text-secondary);">ADMIN ACCOUNT</div>
+            </div>
+            <ul class="nav-links">
+                <li><a id="nav-dash" class="nav-item active"><i class="fa-solid fa-chart-line"></i> Operations Dashboard</a></li>
+                <li><a id="nav-plan" class="nav-item"><i class="fa-solid fa-table-list"></i> Master Planning Table</a></li>
+                <li><a id="nav-truck" class="nav-item"><i class="fa-solid fa-truck-moving"></i> Truck Availability</a></li>
+            </ul>
         </div>
-    </div>
-    
-    <div style="position: relative; height: 380px; width: 100%;">
-        <canvas id="milestoneTimelineChart"></canvas>
-    </div>
-</div>
+        <a class="nav-item" style="color:var(--accent-danger);"><i class="fa-solid fa-power-off"></i> Disconnect Terminal</a>
+    </aside>
 
-<style>
-    .tab-toggle { background: transparent; border: none; color: var(--text-secondary); padding: 6px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-    .tab-toggle.active { background: var(--accent-color); color: #fff; }
-</style>
+    <main>
+        
+        <div id="panel-dashboard" class="view-container">
+            <div class="kpi-row" style="margin-bottom: 24px;">
+                <div class="kpi-grid-left">
+                    <div class="kpi-sub-grid">
+                        <div class="kpi-card"><h4>PICKED</h4><p class="kpi-v" id="v-picked">10</p><span class="pnd">PENDING: 6</span></div>
+                        <div class="kpi-card"><h4>PGI</h4><p class="kpi-v" id="v-pgi">9</p><span class="pnd">PENDING: 1</span></div>
+                        <div class="kpi-card"><h4>INVOICED</h4><p class="kpi-v" id="v-invoiced">6</p><span class="pnd">PENDING: 3</span></div>
+                    </div>
+                    <div class="kpi-sub-grid">
+                        <div class="kpi-card"><h4>DS PRINTING</h4><p class="kpi-v" id="v-ds">1</p><span class="pnd">PENDING: 5</span></div>
+                        <div class="kpi-card"><h4>CHECKED</h4><p class="kpi-v" id="v-checked">0</p><span class="pnd">PENDING: 1</span></div>
+                        <div class="kpi-card"><h4>LOADED</h4><p class="kpi-v" id="v-loaded">0</p><span class="pnd">PENDING: 0</span></div>
+                    </div>
+                </div>
+                <div class="kpi-card" style="flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+                    <h4 style="margin-bottom: 8px;">TOTAL DISPATCHES (TARGET)</h4>
+                    <p style="font-size: 3.5rem; font-weight: 800; color: white; line-height: 1;">16</p>
+                </div>
+            </div>
+
+            <div class="view-panel" style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: white;"><i class="fa-solid fa-chart-bar"></i> Dispatch Milestone Timeline Tracking</h3>
+                    <div style="display: flex; background: #101726; padding: 4px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <button id="shift-day-btn" class="tab-toggle active">Day Shift (5 AM - 5 PM)</button>
+                        <button id="shift-night-btn" class="tab-toggle">Night Shift (5 PM - 4 AM)</button>
+                    </div>
+                </div>
+                <div style="position: relative; height: 340px; width: 100%;">
+                    <canvas id="milestoneTimelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-planning" class="view-container hidden">
+            <div class="view-panel">
+                <header style="margin-bottom: 20px;">
+                    <h1 style="font-size: 1.5rem;">Master Planning Matrix Table</h1>
+                </header>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button id="toggle-excel-btn" class="btn-secondary" style="color: var(--accent-color); border-color: var(--accent-color);">
+                        <i class="fa-solid fa-file-import"></i> Paste from Excel Spreadsheet
+                    </button>
+                    <button id="toggle-manual-btn" class="btn-secondary" style="color: var(--accent-success); border-color: var(--accent-success);">
+                        <i class="fa-solid fa-square-plus"></i> Open Manual Dispatch Form
+                    </button>
+                </div>
+
+                <div id="excel-importer-drawer" class="manual-entry-box hidden" style="border: 2px dashed var(--accent-color); background: rgba(59, 130, 246, 0.02);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="font-size:0.95rem; color:var(--accent-color); margin: 0;"><i class="fa-solid fa-paste"></i> Direct Clipboard Copy-Paste Excel Importer</h3>
+                        <button class="btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('excel-importer-drawer').classList.add('hidden')">✕ Close</button>
+                    </div>
+                    <textarea id="excel-paste-area" rows="4" style="margin-bottom:10px; font-family: monospace;" placeholder="Paste text columns directly here..."></textarea>
+                    <button id="btn-process-paste" class="btn-primary"><i class="fa-solid fa-gears"></i> Process Clipboard Matrix Rows</button>
+                </div>
+
+                <div id="manual-entry-drawer" class="manual-entry-box hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 style="font-size:0.95rem; color:var(--accent-success); margin: 0;"><i class="fa-solid fa-plus-node"></i> Create Manual Dispatch Item Row</h3>
+                        <button class="btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('manual-entry-drawer').classList.add('hidden')">✕ Close</button>
+                    </div>
+                    <form id="manual-delivery-form" class="manual-entry-form">
+                        <div><label style="font-size:0.75rem; margin-bottom:4px; display:block;">Delivery ID</label><input type="text" required></div>
+                        <div><label style="font-size:0.75rem; margin-bottom:4px; display:block;">Delivery Date</label><input type="date" required></div>
+                        <div><label style="font-size:0.75rem; margin-bottom:4px; display:block;">Customer Name</label><input type="text" required></div>
+                        <div><label style="font-size:0.75rem; margin-bottom:4px; display:block;">Route Destination</label><input type="text" required placeholder="e.g., CALOOCAN"></div>
+                        <button type="submit" class="btn-success">Save Entry</button>
+                    </form>
+                </div>
+
+                <div class="filter-ribbon">
+                    <div style="flex: 1;"><input type="text" placeholder="Live filter dispatch metrics..."></div>
+                    <div><input type="date"></div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Delivery ID</th><th>Date</th><th>Customer</th><th>Route Description</th><th>Status Tracking</th><th>Bay Staging</th><th>Assigned Truck</th>
+                                <th>Picked</th><th>PGI</th><th>Invoiced</th><th>DS Print</th><th>Checked</th><th>Loaded</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>10129043</td><td>2026-06-09</td><td>ASDFSDF</td><td>MANILA</td><td><span style="color:var(--accent-success)">ACTIVE</span></td><td>BAY 1 | A</td><td>AUV-1</td>
+                                <td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-trucks" class="view-container hidden">
+            <div class="view-panel">
+                <header style="margin-bottom: 20px;">
+                    <h1 style="font-size: 1.5rem;">Transport Team Fleet Tracking</h1>
+                </header>
+
+                <div class="manual-entry-box">
+                    <h3 style="font-size: 1rem; margin-bottom: 12px; color: var(--accent-warning);"><i class="fa-solid fa-truck-front"></i> Register Daily Fleet Asset Instance</h3>
+                    <form id="truck-registry-form" class="manual-entry-form">
+                        <div><label style="font-size:0.75rem; display:block; margin-bottom:4px;">Truck Code ID</label><input type="text" id="t-code" placeholder="e.g., AUV-1" required></div>
+                        <div><label style="font-size:0.75rem; display:block; margin-bottom:4px;">Registered Plate Number</label><input type="text" id="t-plate" placeholder="e.g., NHN-675" required></div>
+                        <div>
+                            <label style="font-size:0.75rem; display:block; margin-bottom:4px;">Current Operational Status</label>
+                            <select id="t-status"><option value="AVAILABLE">AVAILABLE (In Yard)</option><option value="ON_ROUTE">DISPATCHED ON ROUTE</option></select>
+                        </div>
+                        <button type="submit" class="btn-primary" style="background:var(--accent-warning); color:black;"><i class="fa-solid fa-floppy-disk"></i> Register Fleet Asset</button>
+                    </form>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr><th>Truck Code Identity</th><th>Registered Plate Number</th><th>Availability Status</th><th>Registration Date Flag</th></tr>
+                        </thead>
+                        <tbody id="trucks-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Tab Page Route Navigation Controllers
+        const links = { 'nav-dash': 'panel-dashboard', 'nav-plan': 'panel-planning', 'nav-truck': 'panel-trucks' };
+        Object.keys(links).forEach(linkId => {
+            document.getElementById(linkId).addEventListener('click', (e) => {
+                Object.keys(links).forEach(id => {
+                    document.getElementById(id).classList.remove('active');
+                    document.getElementById(links[id]).classList.add('hidden');
+                });
+                document.getElementById(linkId).classList.add('active');
+                document.getElementById(links[linkId]).classList.remove('hidden');
+            });
+        });
+
+        // Toggle Visibility Drawer Closures
+        document.getElementById("toggle-excel-btn").addEventListener("click", () => {
+            document.getElementById("excel-importer-drawer").classList.toggle("hidden");
+            document.getElementById("manual-entry-drawer").classList.add("hidden");
+        });
+        document.getElementById("toggle-manual-btn").addEventListener("click", () => {
+            document.getElementById("manual-entry-drawer").classList.toggle("hidden");
+            document.getElementById("excel-importer-drawer").classList.add("hidden");
+        });
+
+        // Setup Empty Truck Operations Logic Array
+        let registeredTrucksCollection = [];
+        document.getElementById('truck-registry-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const codeVal = document.getElementById('t-code').value.trim();
+            const plateVal = document.getElementById('t-plate').value.trim();
+            const statusVal = document.getElementById('t-status').value;
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            // Client-Side validation matches SQL Daily Composite Unique Rule
+            const isDuplicateToday = registeredTrucksCollection.some(t => t.code === codeVal && t.date === todayStr);
+            if(isDuplicateToday) {
+                alert(`Error inserting truck: duplicate key value violates unique constraint "trucks_code_key" for today (${todayStr})`);
+                return;
+            }
+
+            // Save and render entry
+            registeredTrucksCollection.push({ code: codeVal, plate: plateVal, status: statusVal, date: todayStr });
+            renderTrucksTable();
+            updateChartTimelineData();
+            document.getElementById('truck-registry-form').reset();
+        });
+
+        function renderTrucksTable() {
+            const tbody = document.getElementById('trucks-table-body');
+            tbody.innerHTML = registeredTrucksCollection.map(t => `
+                <tr><td>${t.code}</td><td>${t.plate}</td><td><span style="color:var(--accent-success)">${t.status}</span></td><td>${t.date}</td></tr>
+            `).join('');
+        }
+
+        // Segmented ChartJS Interface Orchestration
+        const labelsDay = ['5 AM', '6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'];
+        const labelsNight = ['5 PM', '6 PM', '7 PM', '8 PM', '9 PM', '10 PM', '11 PM', '12 AM', '1 AM', '2 AM', '3 AM', '4 AM'];
+        let activeGraphShift = 'day';
+
+        const ctx = document.getElementById('milestoneTimelineChart').getContext('2d');
+        const milestoneChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labelsDay,
+                datasets: [
+                    { label: 'TARGET', type: 'line', data: Array(13).fill(16), borderColor: '#ef4444', borderDash: [6,6], borderWidth: 2, pointRadius: 0, fill: false },
+                    { label: 'PICKED', data: [0,0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor: '#10b981' },
+                    { label: 'PGI', data: [0,0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor: '#ec4899' },
+                    { label: 'INVOICED', data: [0,0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor: '#f59e0b' },
+                    { label: 'DS PRINTING', data: [0,0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor: '#94a3b8' },
+                    { label: 'CHECKED', data: [0,0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor: '#06b6d4' },
+                    { label: 'LOADED', data: [0,0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor: '#a855f7' },
+                    { label: 'AVAIL. TRUCK', data: [0,0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor: '#eab308' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8' } },
+                    y: { min: 0, max: 16, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', stepSize: 2 } }
+                },
+                plugins: { legend: { labels: { color: '#f8fafc', boxWidth: 12, font: { weight: 'bold', size: 11 } } } }
+            }
+        });
+
+        function updateChartTimelineData() {
+            // Isolates active hour metrics to show exactly at 10 PM without bleedback
+            const currentLabels = activeGraphShift === 'day' ? labelsDay : labelsNight;
+            
+            // Set static mock milestone heights for 9 PM, 10 PM, 11 PM shifts
+            const pickedMap = activeGraphShift === 'night' ? [0,0,0,0,1,8,10,0,0,0,0,0] : Array(13).fill(0);
+            const pgiMap = activeGraphShift === 'night' ? [0,0,0,0,1,8,9,0,0,0,0,0] : Array(13).fill(0);
+            const invoiceMap = activeGraphShift === 'night' ? [0,0,0,0,1,5,6,0,0,0,0,0] : Array(13).fill(0);
+            const dsMap = activeGraphShift === 'night' ? [0,0,0,0,1,1,1,0,0,0,0,0] : Array(13).fill(0);
+            
+            // Dynamic strict evaluation for truck registration blocks
+            const trucksMap = currentLabels.map(hour => {
+                const hourTargetMatch = (hour === '10 PM');
+                const hasTruckRegistered = registeredTrucksCollection.some(t => t.code === 'AUV-1');
+                return (hourTargetMatch && hasTruckRegistered) ? 1 : 0;
+            });
+
+            milestoneChart.data.datasets[1].data = pickedMap;
+            milestoneChart.data.datasets[2].data = pgiMap;
+            milestoneChart.data.datasets[3].data = invoiceMap;
+            milestoneChart.data.datasets[4].data = dsMap;
+            milestoneChart.data.datasets[7].data = trucksMap;
+            milestoneChart.update();
+        }
+
+        // Click Controls Switching Between Shift Ranges
+        document.getElementById('shift-day-btn').addEventListener('click', () => {
+            activeGraphShift = 'day';
+            document.getElementById('shift-day-btn').className = 'tab-toggle active';
+            document.getElementById('shift-night-btn').className = 'tab-toggle';
+            milestoneChart.data.labels = labelsDay;
+            updateChartTimelineData();
+        });
+
+        document.getElementById('shift-night-btn').addEventListener('click', () => {
+            activeGraphShift = 'night';
+            document.getElementById('shift-night-btn').className = 'tab-toggle active';
+            document.getElementById('shift-day-btn').className = 'tab-toggle';
+            milestoneChart.data.labels = labelsNight;
+            updateChartTimelineData();
+        });
+
+        // Set initial screen updates
+        updateChartTimelineData();
+    </script>
+</body>
+</html>
