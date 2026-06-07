@@ -75,7 +75,7 @@
         .status-planning { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
         .status-loaded { background: rgba(16, 185, 129, 0.2); color: var(--accent-success); }
 
-        /* Login wrapper styling */
+        /* Auth View Cover Style */
         .auth-wrapper { height: 100vh; display: flex; justify-content: center; align-items: center; background: var(--bg-main); }
         .auth-card { background: var(--bg-card); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .auth-card h2 { margin-bottom: 24px; text-align: center; }
@@ -189,14 +189,23 @@
         // --- BASE CONNECTOR STATE CONFIGURATION ---
         const SUPABASE_URL = "https://lqgakuegqnfcpzydptbh.supabase.co/rest/v1/"; // Replace with your project URL
         const SUPABASE_ANON_KEY = "sb_publishable_KcN0pj5Cxls0F0hAb8Ar_w_MbKdbbJG"; // Replace with your anon key
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+        
+        let supabaseClient = null;
         let currentUser = null;
         let deliveryDataCache = [];
         let chartInstances = {};
         const WORKFLOW_STEPS = ['picked', 'pgi', 'invoiced', 'ds_printing', 'pulled', 'checked', 'loaded'];
 
+        // Synchronous Module Gatekeeper
         document.addEventListener("DOMContentLoaded", () => {
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } else {
+                console.error("Fatal Error: Supabase connection script is unavailable.");
+                alert("Database engine down. Verification required.");
+                return;
+            }
+
             initViewSwitchers();
             initThemeEngine();
             setupFormListeners();
@@ -209,14 +218,23 @@
         }
 
         async function processUserMetadata(authUser) {
-            const { data: userProfile } = await supabaseClient.from('users').select('*').eq('id', authUser.id).single();
-            if (!userProfile) return;
+            const { data: userProfile, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('id', authUser.id)
+                .single();
+                
+            if (error || !userProfile) {
+                alert("Unauthorized user mapping row context error. Please configure the profile inside Supabase table editor.");
+                await supabaseClient.auth.signOut();
+                toggleViewports(false);
+                return;
+            }
             
             currentUser = userProfile;
             document.getElementById("user-display-name").innerText = currentUser.username;
             document.getElementById("user-display-role").innerText = currentUser.role;
 
-            // Restrict User Directory menu to ADMIN accounts
             if (currentUser.role === 'ADMIN') {
                 document.getElementById("nav-user-management").classList.remove("hidden");
                 fetchUserDirectory();
@@ -228,53 +246,58 @@
             fetchMasterRecords();
         }
 
-        // --- ACCOUNT LOG-IN CONTROLLER VIA VIRTUAL ROUTING ---
-        document.getElementById("login-form").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const username = document.getElementById("auth-username").value.trim().toLowerCase();
-            const password = document.getElementById("auth-password").value;
-            
-            // Map the simple username to its backend virtual email address
-            const virtualEmail = `${username}@logitrack.local`;
+        function setupFormListeners() {
+            // Virtual Email Alphanumeric Username Login Handler
+            document.getElementById("login-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const username = document.getElementById("auth-username").value.trim().toLowerCase();
+                const password = document.getElementById("auth-password").value;
+                
+                const virtualEmail = `${username}@logitrack.local`;
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email: virtualEmail, password: password });
-            if (error) alert(`Login Failed: ${error.message}`);
-            else processUserMetadata(data.user);
-        });
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ 
+                    email: virtualEmail, 
+                    password: password 
+                });
+                
+                if (error) {
+                    alert(`Access Denied: ${error.message}`);
+                } else {
+                    processUserMetadata(data.user);
+                }
+            });
 
-        // --- SELF SERVICE PASSWORD UPDATE LOGIC ---
-        document.getElementById("change-password-form").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const newPassword = document.getElementById("new-password-input").value;
+            // Password Manager & Synced Vault Writer
+            document.getElementById("change-password-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const newPassword = document.getElementById("new-password-input").value;
 
-            if(newPassword.length < 6) {
-                alert("Password must be at least 6 characters long.");
-                return;
-            }
+                if(newPassword.length < 6) {
+                    alert("Constraint Error: Passwords must contain at least 6 characters.");
+                    return;
+                }
 
-            // 1. Update the password inside the encrypted Supabase core service
-            const { error: authError } = await supabaseClient.auth.updateUser({ password: newPassword });
-            
-            if (authError) {
-                alert(`Authentication rejected change: ${authError.message}`);
-                return;
-            }
+                const { error: authError } = await supabaseClient.auth.updateUser({ password: newPassword });
+                if (authError) {
+                    alert(`Auth rejection engine response: ${authError.message}`);
+                    return;
+                }
 
-            // 2. Synchronize the readable text string into our table layout for Admin audits
-            const { error: dbError } = await supabaseClient
-                .from('users')
-                .update({ plaintext_password: newPassword })
-                .eq('id', currentUser.id);
+                const { error: dbError } = await supabaseClient
+                    .from('users')
+                    .update({ plaintext_password: newPassword })
+                    .eq('id', currentUser.id);
 
-            if (dbError) {
-                alert("Password changed globally, but visible directory mapping sync failed.");
-            } else {
-                alert("Your login password has been updated securely.");
-                document.getElementById("change-password-form").reset();
-            }
-        });
+                if (dbError) {
+                    alert("Core password changed but plaintext vault auditing sync wrapper failed.");
+                } else {
+                    alert("Account security credentials have been updated.");
+                    document.getElementById("change-password-form").reset();
+                    if (currentUser.role === 'ADMIN') fetchUserDirectory();
+                }
+            });
+        }
 
-        // --- ADMIN READ LAYER FOR USER DIRECTORY SYSTEM ---
         async function fetchUserDirectory() {
             const { data, error } = await supabaseClient.from('users').select('*');
             if (!error && data) {
@@ -294,7 +317,6 @@
             }
         }
 
-        // --- REST OF CORE WORKFLOW LOGIC REMAINS INTEGRATED ---
         async function fetchMasterRecords() {
             const { data } = await supabaseClient.from('deliveries').select('*').order('delivery_date', { ascending: false });
             if (data) {
@@ -345,10 +367,32 @@
             chartInstances['status'] = new Chart(ctxStatus, { type: 'doughnut', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] }] }, options: { responsive: true, maintainAspectRatio: false } });
         }
 
-        function initViewSwitchers() { document.querySelectorAll(".nav-item").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active")); document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden")); btn.classList.add("active"); document.getElementById(btn.dataset.target).classList.remove("hidden"); }); }); }
-        function initThemeEngine() { document.getElementById("theme-toggle-btn").addEventListener("click", () => document.body.classList.toggle("light-mode")); }
-        function toggleViewports(isLoggedIn) { document.getElementById("auth-container").classList.toggle("hidden", isLoggedIn); document.getElementById("app-container").classList.toggle("hidden", !isLoggedIn); }
-        document.getElementById("logout-btn").addEventListener("click", async () => { await supabaseClient.auth.signOut(); currentUser = null; toggleViewports(false); });
+        function initViewSwitchers() { 
+            document.querySelectorAll(".nav-item").forEach(btn => { 
+                btn.addEventListener("click", (e) => { 
+                    e.preventDefault(); 
+                    document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active")); 
+                    document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden")); 
+                    btn.classList.add("active"); 
+                    document.getElementById(btn.dataset.target).classList.remove("hidden"); 
+                }); 
+            }); 
+        }
+
+        function initThemeEngine() { 
+            document.getElementById("theme-toggle-btn").addEventListener("click", () => document.body.classList.toggle("light-mode")); 
+        }
+
+        function toggleViewports(isLoggedIn) { 
+            document.getElementById("auth-container").classList.toggle("hidden", isLoggedIn); 
+            document.getElementById("app-container").classList.toggle("hidden", !isLoggedIn); 
+        }
+
+        document.getElementById("logout-btn").addEventListener("click", async () => { 
+            await supabaseClient.auth.signOut(); 
+            currentUser = null; 
+            toggleViewports(false); 
+        });
     </script>
 </body>
 </html>
