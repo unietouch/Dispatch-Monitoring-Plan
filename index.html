@@ -187,8 +187,8 @@
 
     <script>
         // --- BASE BACKEND CREDENTIALS CONFIGURATION ---
-        const SUPABASE_URL = "https://lqgakuegqnfcpzydptbh.supabase.co"; // FIXED: Suffix removed cleanly
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZ2FrdWVncW5mY3B6eWRwdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MjgyMjEsImV4cCI6MjA5NjQwNDIyMX0.-bH8ln-AUrrrc-tGZgHFi_W8EXzSL8-I3jg1TM9lapw"; // ACTION: Paste your true public anon key here!
+        const SUPABASE_URL = "https://lqgakuegqnfcpzydptbh.supabase.co"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZ2FrdWVncW5mY3B6eWRwdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MjgyMjEsImV4cCI6MjA5NjQwNDIyMX0.-bH8ln-AUrrrc-tGZgHFi_W8EXzSL8-I3jg1TM9lapw";
         
         let supabaseClient = null;
         let currentUser = null;
@@ -196,13 +196,13 @@
         let chartInstances = {};
         const WORKFLOW_STEPS = ['picked', 'pgi', 'invoiced', 'ds_printing', 'pulled', 'checked', 'loaded'];
 
-        // Synchronous Module Gatekeeper
+        // Core App Initializer
         document.addEventListener("DOMContentLoaded", () => {
             if (typeof supabase !== 'undefined') {
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             } else {
-                console.error("Fatal Error: Supabase connection script is unavailable.");
-                alert("Database engine down. Verification required.");
+                console.error("Fatal Error: Supabase script file is completely unavailable.");
+                alert("Database library down.");
                 return;
             }
 
@@ -225,7 +225,7 @@
                 .single();
                 
             if (error || !userProfile) {
-                alert("Unauthorized user mapping row context error. Please configure the profile inside Supabase table editor.");
+                alert("System Profile Matching Error: Ensure this user exists inside your Database table layout.");
                 await supabaseClient.auth.signOut();
                 toggleViewports(false);
                 return;
@@ -247,7 +247,7 @@
         }
 
         function setupFormListeners() {
-            // Virtual Email Alphanumeric Username Login Handler
+            // Virtual Masking Account Authenticator
             document.getElementById("login-form").addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const username = document.getElementById("auth-username").value.trim().toLowerCase();
@@ -267,19 +267,19 @@
                 }
             });
 
-            // Password Manager & Synced Vault Writer
+            // Password Adjuster Interface Event Listener
             document.getElementById("change-password-form").addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const newPassword = document.getElementById("new-password-input").value;
 
                 if(newPassword.length < 6) {
-                    alert("Constraint Error: Passwords must contain at least 6 characters.");
+                    alert("Rule Error: Password must be 6+ characters.");
                     return;
                 }
 
                 const { error: authError } = await supabaseClient.auth.updateUser({ password: newPassword });
                 if (authError) {
-                    alert(`Auth rejection engine response: ${authError.message}`);
+                    alert(`Auth Error: ${authError.message}`);
                     return;
                 }
 
@@ -289,9 +289,9 @@
                     .eq('id', currentUser.id);
 
                 if (dbError) {
-                    alert("Core password changed but plaintext vault auditing sync wrapper failed.");
+                    alert("Password updated inside internal storage, but display matrix failed to mirror.");
                 } else {
-                    alert("Account security credentials have been updated.");
+                    alert("Security password successfully saved.");
                     document.getElementById("change-password-form").reset();
                     if (currentUser.role === 'ADMIN') fetchUserDirectory();
                 }
@@ -318,7 +318,7 @@
         }
 
         async function fetchMasterRecords() {
-            const { data } = await supabaseClient.from('deliveries').select('*').order('delivery_date', { ascending: false });
+            const { data } = await supabaseClient.from('deliveries').select('*').order('created_at', { ascending: false });
             if (data) {
                 deliveryDataCache = data;
                 renderMasterTable(data);
