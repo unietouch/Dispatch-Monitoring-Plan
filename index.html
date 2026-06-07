@@ -186,9 +186,9 @@
     </div>
 
     <script>
-        // --- BASE CONNECTOR STATE CONFIGURATION ---
-        const SUPABASE_URL = "https://lqgakuegqnfcpzydptbh.supabase.co/rest/v1/"; // Replace with your project URL
-        const SUPABASE_ANON_KEY = "sb_publishable_KcN0pj5Cxls0F0hAb8Ar_w_MbKdbbJG"; // Replace with your anon key
+        // --- BASE BACKEND CREDENTIALS CONFIGURATION ---
+        const SUPABASE_URL = "https://lqgakuegqnfcpzydptbh.supabase.co"; // FIXED: Suffix removed cleanly
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZ2FrdWVncW5mY3B6eWRwdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MjgyMjEsImV4cCI6MjA5NjQwNDIyMX0.-bH8ln-AUrrrc-tGZgHFi_W8EXzSL8-I3jg1TM9lapw"; // ACTION: Paste your true public anon key here!
         
         let supabaseClient = null;
         let currentUser = null;
