@@ -7,6 +7,7 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -50,16 +51,20 @@
         .nav-item { padding: 12px; border-radius: 6px; text-decoration: none; color: var(--text-secondary); display: flex; align-items: center; gap: 12px; transition: 0.2s; }
         .nav-item:hover, .nav-item.active { background: var(--bg-card); color: var(--text-primary); }
 
-        .grid-dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; margin-bottom: 30px; }
+        .grid-dashboard-layout { display: grid; grid-template-columns: 1fr 240px; gap: 20px; margin-bottom: 30px; }
         .ops-kpi-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background: #0e1322; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; text-align: center; margin-bottom: 20px; }
         .ops-kpi-box { padding: 10px; border-right: 1px solid var(--border-color); }
         .ops-kpi-box:last-child { border-right: none; }
         .ops-kpi-box small { text-transform: uppercase; font-size: 0.75rem; color: var(--text-secondary); display: block; font-weight: 600; }
-        .ops-kpi-box span { font-size: 1.5rem; font-weight: bold; color: var(--text-primary); }
+        .ops-kpi-box span { font-size: 1.5rem; font-weight: bold; color: var(--text-primary); display: block; }
+        
+        .ops-sub-pending { display: block; font-size: 0.7rem; font-weight: bold; margin-top: 4px; padding: 2px 4px; border-radius: 4px; }
+        .ops-sub-pending.warn { color: var(--accent-warning); background: rgba(245, 158, 11, 0.1); }
+        .ops-sub-pending.neutral { color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); }
 
         .big-counter-card { background: #1a2236; border: 2px solid #2e3d60; border-radius: 8px; padding: 25px; text-align: center; }
         .big-counter-card h1 { font-size: 4.5rem; line-height: 1; color: var(--text-primary); margin: 10px 0; }
-        .chart-container { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 420px; }
+        .chart-container { background: var(--bg-card); padding: 25px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 480px; position: relative; }
 
         .table-wrapper { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; width: 100%; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
@@ -80,6 +85,8 @@
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .modal-body { background: var(--bg-card); border: 1px solid var(--border-color); padding: 25px; border-radius: 8px; width: 100%; max-width: 440px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        
+        .filter-ribbon { display: flex; gap: 15px; align-items: center; background: var(--bg-card); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; }
     </style>
 </head>
 <body class="dark-mode">
@@ -164,12 +171,30 @@
                 <div class="grid-dashboard-layout">
                     <div>
                         <div class="ops-kpi-bar">
-                            <div class="ops-kpi-box"><small>Picked</small><span id="ops-count-picking">0</span></div>
-                            <div class="ops-kpi-box"><small>PGI</small><span id="ops-count-pgi">0</span></div>
-                            <div class="ops-kpi-box"><small>Invoiced</small><span id="ops-count-invoicing">0</span></div>
-                            <div class="ops-kpi-box"><small>DS Printing</small><span id="ops-count-ds">0</span></div>
-                            <div class="ops-kpi-box"><small>Checked</small><span id="ops-count-checking">0</span></div>
-                            <div class="ops-kpi-box" style="color: var(--accent-success);"><small>Loaded</small><span id="ops-count-loaded">0</span></div>
+                            <div class="ops-kpi-box">
+                                <small>Picked</small><span id="ops-count-picking">0</span>
+                                <small id="pending-picked" class="ops-sub-pending warn">Pending: 0</small>
+                            </div>
+                            <div class="ops-kpi-box">
+                                <small>PGI</small><span id="ops-count-pgi">0</span>
+                                <small id="pending-pgi" class="ops-sub-pending warn">Pending: 0</small>
+                            </div>
+                            <div class="ops-kpi-box">
+                                <small>Invoiced</small><span id="ops-count-invoicing">0</span>
+                                <small id="pending-invoiced" class="ops-sub-pending warn">Pending: 0</small>
+                            </div>
+                            <div class="ops-kpi-box">
+                                <small>DS Printing</small><span id="ops-count-ds">0</span>
+                                <small id="pending-ds" class="ops-sub-pending warn">Pending: 0</small>
+                            </div>
+                            <div class="ops-kpi-box">
+                                <small>Checked</small><span id="ops-count-checking">0</span>
+                                <small id="pending-checked" class="ops-sub-pending warn">Pending: 0</small>
+                            </div>
+                            <div class="ops-kpi-box" style="color: var(--accent-success);">
+                                <small>Loaded</small><span id="ops-count-loaded">0</span>
+                                <small id="pending-loaded" class="ops-sub-pending warn">Pending: 0</small>
+                            </div>
                         </div>
                         <div class="chart-container"><canvas id="opsTimelineChart"></canvas></div>
                     </div>
@@ -203,8 +228,16 @@
                     </form>
                 </div>
 
-                <div style="display:flex; gap:12px; margin-bottom:20px;">
-                    <input type="text" id="table-search" placeholder="Search master planning schedules..." style="min-width:300px;">
+                <div class="filter-ribbon">
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <label style="font-size:0.75rem; font-weight:bold; color:var(--text-secondary);">Delivery Date Target Filter</label>
+                        <input type="date" id="filter-delivery-date">
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+                        <label style="font-size:0.75rem; font-weight:bold; color:var(--text-secondary);">Live Context Search</label>
+                        <input type="text" id="table-search" placeholder="Search delivery ID or customer handles...">
+                    </div>
+                    <button id="btn-clear-filters" class="btn-secondary" style="align-self:flex-end;"><i class="fa-solid fa-filter-circle-xmark"></i> Clear Filters</button>
                 </div>
 
                 <div class="table-wrapper">
@@ -212,7 +245,7 @@
                         <thead>
                             <tr>
                                 <th>Delivery ID</th><th>Date</th><th>Customer</th><th>Route Description (City)</th><th>Status Tracking</th><th>Staging Location / Bay</th><th>Assigned Truck Group</th>
-                                <th>Picked</th><th>PGI</th><th>Invoiced</th><th>DS Print</th><th>Pulled</th><th>Checked</th><th>Loaded</th>
+                                <th>Picked</th><th>PGI</th><th>Invoiced</th><th>DS Print</th><th>Checked</th><th>Loaded</th>
                             </tr>
                         </thead>
                         <tbody id="master-table-body"></tbody>
@@ -251,15 +284,17 @@
     </div>
 
     <script>
+        Chart.register(ChartDataLabels);
+
         const SUPABASE_URL = "https://lqgakuegqnfcpzydptbh.supabase.co"; 
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZ2FrdWVncW5mY3B6eWRwdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MjgyMjEsImV4cCI6MjA5NjQwNDIyMX0.-bH8ln-AUrrrc-tGZgHFi_W8EXzSL8-I3jg1TM9lapw";
         
         let supabaseClient = null, currentUser = null, deliveryDataCache = [], truckFleetCache = [], timelineChartInstance = null;
         let activePromptTargetRecord = null, activePromptStepField = null;
         
-        const WORKFLOW_STEPS = ['picked', 'pgi', 'invoiced', 'ds_printing', 'pulled', 'checked', 'loaded'];
+        // Exact 6 structural workflow keys matching graph lines and dashboard specs
+        const WORKFLOW_STEPS = ['picked', 'pgi', 'invoiced', 'ds_printing', 'checked', 'loaded'];
         
-        // 5AM TO NEXT DAY 4AM HOUR ENGINE DEFINITIONS INDEX KEYS
         const OPERATIONAL_HOURS_LABELS = [
             '5 AM', '6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM', '12 PM', 
             '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM', '8 PM', 
@@ -273,20 +308,51 @@
             setupSubmitHandlers();
             setupClipboardPasteEngine();
             buildBaySelectorOptions();
+            setDefaultFilterDates();
             
-            document.getElementById("table-search").addEventListener("input", (e) => {
-                const query = e.target.value.toLowerCase().trim();
-                if(!query) { renderMasterTable(deliveryDataCache); return; }
-                const rowsFiltered = deliveryDataCache.filter(d => String(d.delivery_number).toLowerCase().includes(query) || String(d.customer_name).toLowerCase().includes(query));
-                renderMasterTable(rowsFiltered);
+            // Real-time Event Filtering Core
+            document.getElementById("table-search").addEventListener("input", executeTableDataFilters);
+            document.getElementById("filter-delivery-date").addEventListener("change", executeTableDataFilters);
+            document.getElementById("btn-clear-filters").addEventListener("click", () => {
+                document.getElementById("table-search").value = "";
+                setDefaultFilterDates();
+                executeTableDataFilters();
             });
         });
+
+        function setDefaultFilterDates() {
+            // Compute dynamic Tomorrow (Today + 1 Day) calculation template string
+            const targetDateObj = new Date();
+            targetDateObj.setDate(targetDateObj.getDate() + 1);
+            const yyyy = targetDateObj.getFullYear();
+            const mm = String(targetDateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(targetDateObj.getDate()).padStart(2, '0');
+            document.getElementById("filter-delivery-date").value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        function executeTableDataFilters() {
+            const searchQuery = document.getElementById("table-search").value.toLowerCase().trim();
+            const selectedDateFilter = document.getElementById("filter-delivery-date").value;
+
+            let resultDataset = [...deliveryDataCache];
+
+            if(selectedDateFilter) {
+                resultDataset = resultDataset.filter(d => d.delivery_date === selectedDateFilter);
+            }
+            if(searchQuery) {
+                resultDataset = resultDataset.filter(d => 
+                    String(d.delivery_number).toLowerCase().includes(searchQuery) || 
+                    String(d.customer_name).toLowerCase().includes(searchQuery) ||
+                    String(d.route).toLowerCase().includes(searchQuery)
+                );
+            }
+
+            renderMasterTable(resultDataset);
+        }
 
         function buildBaySelectorOptions() {
             const dropdown = document.getElementById("modal-bay-dropdown");
             dropdown.innerHTML = "";
-            
-            // Loop and add Bays 1 up to 8 with Side labels A, B, and C
             for(let bayNum = 1; bayNum <= 8; bayNum++) {
                 ['A', 'B', 'C'].forEach(sideLetter => {
                     const stringOption = `BAY ${bayNum} | ${sideLetter}`;
@@ -330,7 +396,7 @@
                 try {
                     const { data: matchedProfiles, error } = await supabaseClient.from('users').select('*').eq('username', usernameInput);
                     if (error || !matchedProfiles || matchedProfiles.length === 0) {
-                        alert("Access Denied: Invalid login credentials");
+                        alert("Access Denied: Invalid credentials");
                         return;
                     }
 
@@ -353,10 +419,10 @@
                         fetchActiveTruckFleet();
                         fetchMasterRecords();
                     } else {
-                        alert("Access Denied: Checked verification matching row metrics configuration key.");
+                        alert("Access Denied.");
                     }
                 } catch(err) {
-                    alert("System authentication session gateway mapped error exception.");
+                    alert("Authentication exception caught.");
                 }
             });
 
@@ -386,7 +452,6 @@
                 fetchActiveTruckFleet();
             });
 
-            // BAY OVERLAY SELECTION DIALOG CONFIRMATION MOTOR
             document.getElementById("bay-modal-cancel-btn").addEventListener("click", () => {
                 document.getElementById("bay-assignment-modal").classList.add("hidden");
                 fetchMasterRecords();
@@ -415,14 +480,13 @@
                     [`${activePromptStepField}_by`]: currentUser.username,
                     [`${activePromptStepField}_at`]: currentStampStr,
                     truck_status: updateStatusStringValue,
-                    warehouse_bay: finalBayStringValue // Write Bay metadata to DB table
+                    warehouse_bay: finalBayStringValue
                 }).eq('id', activePromptTargetRecord);
 
                 document.getElementById("modal-bay-custom-text").value = "";
                 fetchMasterRecords();
             });
 
-            // TRUCK ASSIGNMENT SUBMIT MOTOR ROUTINES
             document.getElementById("modal-cancel-btn").addEventListener("click", () => {
                 document.getElementById("truck-assignment-modal").classList.add("hidden");
                 fetchMasterRecords();
@@ -485,11 +549,11 @@
 
                 if(uploadBatchArray.length > 0) {
                     const { error } = await supabaseClient.from('deliveries').insert(uploadBatchArray);
-                    if(error) alert("Insertion error row code: " + error.message);
+                    if(error) alert("Insertion error: " + error.message);
                     document.getElementById("excel-paste-area").value = "";
                     fetchMasterRecords();
                 } else {
-                    alert("Invalid tabular columns matrix schema formatting caught.");
+                    alert("Invalid tabular formatting lines.");
                 }
             });
         }
@@ -502,7 +566,7 @@
                     renderTruckFleetViewTable(data);
                     buildTruckSelectionDropdown(data);
                 }
-            } catch (err) { console.log("Fleet tracking context row skipped."); }
+            } catch (err) { console.log("Fleet asset registry load error."); }
         }
 
         function renderTruckFleetViewTable(fleetArray) {
@@ -522,20 +586,19 @@
         }
 
         async function fetchMasterRecords() {
-            const { data } = await supabaseClient.from('deliveries').select('*').order('created_at', { ascending: false });
+            // Pulled using created_at ascending index logic so rows maintain fixed layout positions permanently
+            const { data } = await supabaseClient.from('deliveries').select('*').order('created_at', { ascending: true });
             if (data) {
                 deliveryDataCache = data;
-                renderMasterTable(data);
+                executeTableDataFilters(); 
                 refreshOperationalCharts(data);
             }
         }
 
-        // STEP-DRIVEN DYNAMIC WORKFLOW MILESTONE EVALUATION PROGRESSION MATRIX
         function calculateDynamicRowStatus(row) {
             if (row.is_loaded) return "LOADED";
             if (row.is_checked) return "For Loading";
-            if (row.is_pulled) return "For Checking";
-            if (row.is_ds_printing) return "For Pulling";
+            if (row.is_ds_printing) return "For Checking";
             if (row.is_invoiced) return "For DS Printing";
             if (row.is_pgi) return "INVOICED";
             if (row.is_picked) return "PGI";
@@ -569,10 +632,28 @@
         }
 
         async function handleWorkflowMilestoneToggle(id, stepFieldKey, previousCheckValue, checkboxElement) {
+            // Security Lock Guard Rule
             if(previousCheckValue && currentUser.role !== 'ADMIN') { checkboxElement.checked = true; return; }
             const targetNextCheckState = !previousCheckValue;
 
-            // Checked Ticked Scenario -> Prompt Bay Configuration Options
+            const targetLiveRowObj = deliveryDataCache.find(r => r.id === id);
+            if (!targetLiveRowObj) return;
+
+            // Strict Sequential Verification Guard Engine Logic
+            if (targetNextCheckState === true) {
+                const stepIndex = WORKFLOW_STEPS.indexOf(stepFieldKey);
+                if (stepIndex > 0) {
+                    const precedingStepKey = WORKFLOW_STEPS[stepIndex - 1];
+                    const isPrecedingComplete = targetLiveRowObj[`is_${precedingStepKey}`] || false;
+                    
+                    if (!isPrecedingComplete) {
+                        alert(`Workflow Exception: Cannot proceed to "${stepFieldKey.toUpperCase()}". The preceding requirement "${precedingStepKey.toUpperCase()}" must be checked first!`);
+                        checkboxElement.checked = false;
+                        return;
+                    }
+                }
+            }
+
             if (stepFieldKey === 'checked' && targetNextCheckState === true) {
                 activePromptTargetRecord = id;
                 activePromptStepField = stepFieldKey;
@@ -580,7 +661,6 @@
                 return;
             }
 
-            // Loaded Ticked Scenario -> Prompt Truck Assignment Modal
             if (stepFieldKey === 'loaded' && targetNextCheckState === true) {
                 activePromptTargetRecord = id;
                 activePromptStepField = stepFieldKey;
@@ -589,12 +669,8 @@
             }
 
             const isNowStamp = targetNextCheckState ? new Date().toISOString() : null;
-            
-            const targetLiveRowObj = deliveryDataCache.find(r => r.id === id);
-            if(targetLiveRowObj) {
-                targetLiveRowObj[`is_${stepFieldKey}`] = targetNextCheckState;
-            }
-            const updateStatusStringValue = calculateDynamicRowStatus(targetLiveRowObj || {});
+            targetLiveRowObj[`is_${stepFieldKey}`] = targetNextCheckState;
+            const updateStatusStringValue = calculateDynamicRowStatus(targetLiveRowObj);
 
             await supabaseClient.from('deliveries').update({
                 [`is_${stepFieldKey}`]: targetNextCheckState,
@@ -606,7 +682,6 @@
             fetchMasterRecords();
         }
 
-        // Live Cumulative Operations Analytics Timeline Chart (5AM to 4AM Next Day Window)
         function refreshOperationalCharts(dataset) {
             if(dataset.length === 0) return;
             const contextTopDate = dataset[0].delivery_date;
@@ -614,23 +689,35 @@
 
             const totalDispatchTargetCount = dataset.length;
             document.getElementById("ops-total-dispatch").innerText = totalDispatchTargetCount;
-            document.getElementById("ops-count-picking").innerText = dataset.filter(d => d.is_picked).length;
-            document.getElementById("ops-count-pgi").innerText = dataset.filter(d => d.is_pgi).length;
-            document.getElementById("ops-count-invoicing").innerText = dataset.filter(d => d.is_invoiced).length;
-            document.getElementById("ops-count-ds").innerText = dataset.filter(d => d.is_ds_printing).length;
-            document.getElementById("ops-count-checking").innerText = dataset.filter(d => d.is_checked).length;
-            document.getElementById("ops-count-loaded").innerText = dataset.filter(d => d.is_loaded).length;
+            
+            const totalPicked = dataset.filter(d => d.is_picked).length;
+            const totalPGI = dataset.filter(d => d.is_pgi).length;
+            const totalInvoiced = dataset.filter(d => d.is_invoiced).length;
+            const totalDS = dataset.filter(d => d.is_ds_printing).length;
+            const totalChecked = dataset.filter(d => d.is_checked).length;
+            const totalLoaded = dataset.filter(d => d.is_loaded).length;
 
-            // Re-maps precise hour components onto the custom 5AM to 4AM logistics time array buckets
+            document.getElementById("ops-count-picking").innerText = totalPicked;
+            document.getElementById("ops-count-pgi").innerText = totalPGI;
+            document.getElementById("ops-count-invoicing").innerText = totalInvoiced;
+            document.getElementById("ops-count-ds").innerText = totalDS;
+            document.getElementById("ops-count-checking").innerText = totalChecked;
+            document.getElementById("ops-count-loaded").innerText = totalLoaded;
+
+            // Updated criteria matching metrics exactly with graph line definitions
+            document.getElementById("pending-picked").innerText = `Pending: ${totalDispatchTargetCount - totalPicked}`;
+            document.getElementById("pending-pgi").innerText = `Pending: ${totalPicked - totalPGI}`;
+            document.getElementById("pending-invoiced").innerText = `Pending: ${totalPGI - totalInvoiced}`;
+            document.getElementById("pending-ds").innerText = `Pending: ${totalInvoiced - totalDS}`;
+            document.getElementById("pending-checked").innerText = `Pending: ${totalDS - totalChecked}`;
+            document.getElementById("pending-loaded").innerText = `Pending: ${totalChecked - totalLoaded}`;
+
             const find24HourOperatingBucketIndex = (timestampString) => {
                 if(!timestampString) return -1;
-                const rawHour = new Date(timestampString).getHours(); // Returns local 0 to 23
-                
-                // 5 AM to 23 PM shifts back into index 0 through 18
+                const rawHour = new Date(timestampString).getHours();
                 if(rawHour >= 5) {
                     return rawHour - 5;
                 } else {
-                    // Midnight (0) down to 4 AM maps to indices 19 through 23
                     return rawHour + 19;
                 }
             };
@@ -641,7 +728,8 @@
                 invoiced: new Array(24).fill(0),
                 ds_printing: new Array(24).fill(0),
                 checked: new Array(24).fill(0),
-                loaded: new Array(24).fill(0)
+                loaded: new Array(24).fill(0),
+                avail_trucks: new Array(24).fill(0)
             };
 
             dataset.forEach(row => {
@@ -649,7 +737,7 @@
                     const rowTimestampVal = row[`${stepKey}_at`];
                     if(rowTimestampVal) {
                         const targetBucket = find24HourOperatingBucketIndex(rowTimestampVal);
-                        if(targetBucket !== -1 && dataMetricsHourMatrix[stepKey]) {
+                        if(targetBucket !== -1) {
                             dataMetricsHourMatrix[stepKey][targetBucket]++;
                         }
                     }
@@ -657,12 +745,22 @@
             });
 
             const makeCumulativeArray = (arr) => {
-                let cumulativeSum = 0;
-                return arr.map(val => {
-                    cumulativeSum += val;
-                    return cumulativeSum;
-                });
+                let sum = 0;
+                return arr.map(val => { sum += val; return sum; });
             };
+
+            const cumulativePicked = makeCumulativeArray(dataMetricsHourMatrix.picked);
+            const cumulativePGI = makeCumulativeArray(dataMetricsHourMatrix.pgi);
+            const cumulativeInvoiced = makeCumulativeArray(dataMetricsHourMatrix.invoiced);
+            const cumulativeDS = makeCumulativeArray(dataMetricsHourMatrix.ds_printing);
+            const cumulativeChecked = makeCumulativeArray(dataMetricsHourMatrix.checked);
+            const cumulativeLoaded = makeCumulativeArray(dataMetricsHourMatrix.loaded);
+
+            const totalFleetAssetCount = truckFleetCache.length || 8; 
+            for(let i = 0; i < 24; i++) {
+                const calculatedAvailable = totalFleetAssetCount - cumulativeLoaded[i];
+                dataMetricsHourMatrix.avail_trucks[i] = calculatedAvailable > 0 ? calculatedAvailable : 0;
+            }
 
             const targetLineThresholdArray = new Array(24).fill(totalDispatchTargetCount);
 
@@ -670,17 +768,18 @@
             if (timelineChartInstance) timelineChartInstance.destroy();
 
             timelineChartInstance = new Chart(elementCtx, {
-                type: 'line',
+                type: 'line', 
                 data: {
                     labels: OPERATIONAL_HOURS_LABELS,
                     datasets: [
-                        { label: 'DISPATCH TARGET BASELINE', data: targetLineThresholdArray, borderColor: '#ef4444', borderWidth: 2, borderDash: [6,6], fill: false, pointRadius: 0 },
-                        { label: 'PICKED', data: makeCumulativeArray(dataMetricsHourMatrix.picked), borderColor: '#10b981', tension: 0.15, fill: false },
-                        { label: 'PGI', data: makeCumulativeArray(dataMetricsHourMatrix.pgi), borderColor: '#3b82f6', tension: 0.15, fill: false },
-                        { label: 'INVOICED', data: makeCumulativeArray(dataMetricsHourMatrix.invoiced), borderColor: '#f59e0b', tension: 0.15, fill: false },
-                        { label: 'DS PRINTING', data: makeCumulativeArray(dataMetricsHourMatrix.ds_printing), borderColor: '#8b5cf6', tension: 0.15, fill: false },
-                        { label: 'CHECKED', data: makeCumulativeArray(dataMetricsHourMatrix.checked), borderColor: '#ec4899', tension: 0.15, fill: false },
-                        { label: 'LOADED', data: makeCumulativeArray(dataMetricsHourMatrix.loaded), borderColor: '#06b6d4', tension: 0.15, fill: false }
+                        { label: 'TARGET', data: targetLineThresholdArray, borderColor: '#ef4444', borderWidth: 2, borderDash: [6,6], fill: false, pointRadius: 0, datalabels: { display: false } },
+                        { label: 'PICKED', data: cumulativePicked, borderColor: '#22c55e', backgroundColor: '#22c55e', tension: 0.15, fill: false },
+                        { label: 'PGI', data: cumulativePGI, borderColor: '#ec4899', backgroundColor: '#ec4899', tension: 0.15, fill: false },
+                        { label: 'INVOICED', data: cumulativeInvoiced, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.15, fill: false },
+                        { label: 'DS PRINTING', data: cumulativeDS, borderColor: '#9ca3af', backgroundColor: '#9ca3af', tension: 0.15, fill: false },
+                        { label: 'CHECKED', data: cumulativeChecked, borderColor: '#06b6d4', backgroundColor: '#06b6d4', tension: 0.15, fill: false },
+                        { label: 'LOADED', data: cumulativeLoaded, borderColor: '#a855f7', backgroundColor: '#a855f7', tension: 0.15, fill: false },
+                        { label: 'AVAIL. TRUCK', data: dataMetricsHourMatrix.avail_trucks, borderColor: '#eab308', backgroundColor: '#eab308', tension: 0.15, fill: false }
                     ]
                 },
                 options: {
@@ -688,18 +787,35 @@
                     maintainAspectRatio: false,
                     scales: { 
                         y: { 
-                            beginAtZero: true, 
-                            suggestedMax: totalDispatchTargetCount + 3,
-                            ticks: { color: '#9ca3af', stepSize: Math.ceil(totalDispatchTargetCount / 10) || 1 },
+                            beginAtZero: true,
+                            ticks: { color: '#9ca3af' },
                             grid: { color: 'rgba(255,255,255,0.06)' }
                         },
                         x: {
-                            ticks: { color: '#9ca3af', maxRotation: 45, autoSkip: false },
+                            ticks: { color: '#9ca3af', autoSkip: false },
                             grid: { color: 'rgba(255,255,255,0.06)' }
                         }
                     },
                     plugins: {
-                        legend: { labels: { color: '#f9fafb', font: { size: 11 } }, position: 'top' }
+                        legend: { 
+                            labels: { color: '#f9fafb', font: { size: 11, weight: 'bold' } }, 
+                            position: 'top' 
+                        },
+                        datalabels: {
+                            anchor: 'center',
+                            align: 'top',
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 9 },
+                            backgroundColor: function(context) {
+                                return context.dataset.backgroundColor || '#1f2937';
+                            },
+                            borderRadius: 3,
+                            padding: 2,
+                            formatter: function(value, context) {
+                                if (context.datasetIndex === 0) return null;
+                                return value;
+                            }
+                        }
                     }
                 }
             });
