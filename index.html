@@ -64,11 +64,15 @@
         th, td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
         th { background-color: rgba(0,0,0,0.05); color: var(--text-secondary); font-weight: 600; }
         
-        .action-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        input[type="text"], input[type="password"], select { padding: 10px 14px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); }
+        .action-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .manual-entry-box { background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+        .manual-entry-form { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+        
+        input[type="text"], input[type="password"], input[type="date"], select { padding: 10px 14px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); }
         button { padding: 10px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.15s; }
         .btn-primary { background: var(--accent-color); color: #fff; }
         .btn-secondary { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .btn-success { background: var(--accent-success); color: #fff; }
         .btn-danger-outline { background: transparent; border: 1px solid var(--accent-error); color: var(--accent-error); }
 
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
@@ -80,6 +84,7 @@
         .auth-card { background: var(--bg-card); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .auth-card h2 { margin-bottom: 24px; text-align: center; }
         .input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .input-group label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
     </style>
 </head>
 <body class="dark-mode">
@@ -136,12 +141,46 @@
             <section id="raw-data-screen" class="view-panel hidden">
                 <header class="panel-header">
                     <h1>Master Data Planning Table</h1>
-                    <div class="action-bar">
-                        <input type="text" id="table-search" placeholder="Filter rows...">
-                        <input type="file" id="import-excel-input" accept=".xlsx, .xls" class="hidden">
-                        <button class="btn-secondary" onclick="document.getElementById('import-excel-input').click()"><i class="fa-solid fa-file-import"></i> Import</button>
-                    </div>
                 </header>
+
+                <div class="manual-entry-box">
+                    <h3 style="margin-bottom: 12px; font-size: 1rem; color: var(--accent-color);"><i class="fa-solid fa-square-plus"></i> Manual Dispatch Delivery Entry</h3>
+                    <form id="manual-delivery-form" class="manual-entry-form">
+                        <div class="input-group" style="margin-bottom:0;">
+                            <label>Delivery ID (Dispatch #)</label>
+                            <input type="text" id="manual-delivery-num" required placeholder="e.g. 10129030">
+                        </div>
+                        <div class="input-group" style="margin-bottom:0;">
+                            <label>Delivery Date</label>
+                            <input type="date" id="manual-delivery-date" required>
+                        </div>
+                        <div class="input-group" style="margin-bottom:0;">
+                            <label>Customer Name</label>
+                            <input type="text" id="manual-customer-name" required placeholder="Customer Account">
+                        </div>
+                        <div class="input-group" style="margin-bottom:0;">
+                            <label>Route Description</label>
+                            <input type="text" id="manual-route" required placeholder="e.g. 1102 --> PASIG">
+                        </div>
+                        <div class="input-group" style="margin-bottom:0;">
+                            <label>Truck Status</label>
+                            <select id="manual-status">
+                                <option value="Planning">Planning</option>
+                                <option value="PICKING">PICKING</option>
+                                <option value="LOADING">LOADING</option>
+                                <option value="LOADED">LOADED</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-success"><i class="fa-solid fa-plus"></i> Insert Record</button>
+                    </form>
+                </div>
+
+                <div class="action-bar">
+                    <input type="text" id="table-search" placeholder="Filter rows..." style="min-width: 250px;">
+                    <input type="file" id="import-excel-input" accept=".xlsx, .xls" class="hidden">
+                    <button class="btn-secondary" onclick="document.getElementById('import-excel-input').click()"><i class="fa-solid fa-file-import"></i> Import Bulk Excel</button>
+                </div>
+
                 <div class="table-wrapper">
                     <table>
                         <thead>
@@ -210,6 +249,7 @@
             initThemeEngine();
             setupFormListeners();
             checkActiveSession();
+            setupSearchEngine();
         });
 
         async function checkActiveSession() {
@@ -267,6 +307,37 @@
                 }
             });
 
+            // NEW: MANUAL DISPATCH DELIVERY ID INSERTION HANDLER
+            document.getElementById("manual-delivery-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                
+                const deliveryNo = document.getElementById("manual-delivery-num").value.trim();
+                const deliveryDate = document.getElementById("manual-delivery-date").value;
+                const customerName = document.getElementById("manual-customer-name").value.trim();
+                const route = document.getElementById("manual-route").value.trim();
+                const truckStatus = document.getElementById("manual-status").value;
+
+                const payload = {
+                    delivery_number: deliveryNo,
+                    delivery_date: deliveryDate,
+                    customer_name: customerName,
+                    route: route,
+                    truck_status: truckStatus
+                };
+
+                const { error } = await supabaseClient
+                    .from('deliveries')
+                    .insert([payload]);
+
+                if (error) {
+                    alert(`Database Insertion Failed: ${error.message}`);
+                } else {
+                    alert(`Success: Delivery ID ${deliveryNo} entered into master schedule.`);
+                    document.getElementById("manual-delivery-form").reset();
+                    fetchMasterRecords(); // Refresh display instantly
+                }
+            });
+
             // Password Adjuster Interface Event Listener
             document.getElementById("change-password-form").addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -295,6 +366,23 @@
                     document.getElementById("change-password-form").reset();
                     if (currentUser.role === 'ADMIN') fetchUserDirectory();
                 }
+            });
+        }
+
+        function setupSearchEngine() {
+            document.getElementById("table-search").addEventListener("input", (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                if (!term) {
+                    renderMasterTable(deliveryDataCache);
+                    return;
+                }
+                const filtered = deliveryDataCache.filter(item => 
+                    (item.delivery_number && item.delivery_number.toLowerCase().includes(term)) ||
+                    (item.customer_name && item.customer_name.toLowerCase().includes(term)) ||
+                    (item.route && item.route.toLowerCase().includes(term)) ||
+                    (item.truck_status && item.truck_status.toLowerCase().includes(term))
+                );
+                renderMasterTable(filtered);
             });
         }
 
@@ -337,7 +425,11 @@
                     const isDisabled = (isChecked && currentUser.role !== 'ADMIN') ? 'disabled' : '';
                     checkboxHTML += `<td style="text-align:center;"><input type="checkbox" ${isChecked ? 'checked' : ''} ${isDisabled} onchange="handleWorkflowToggle('${row.id}', '${step}', ${isChecked}, this)"></td>`;
                 });
-                tr.innerHTML = `<td><strong>${row.delivery_number}</strong></td><td>${row.delivery_date}</td><td>${row.customer_name}</td><td>${row.route}</td><td><span class="badge">${row.truck_status || 'Planning'}</span></td>${checkboxHTML}`;
+                
+                let statusBadgeColor = 'status-planning';
+                if (row.truck_status === 'LOADED') statusBadgeColor = 'status-loaded';
+                
+                tr.innerHTML = `<td><strong>${row.delivery_number}</strong></td><td>${row.delivery_date}</td><td>${row.customer_name}</td><td>${row.route}</td><td><span class="badge ${statusBadgeColor}">${row.truck_status || 'Planning'}</span></td>${checkboxHTML}`;
                 tbody.appendChild(tr);
             });
         }
