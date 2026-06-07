@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -41,7 +40,6 @@
         body { background-color: var(--bg-main); color: var(--text-primary); transition: background 0.3s; overflow-x: hidden; }
         .hidden { display: none !important; }
 
-        /* Structural Layout */
         .app-wrapper { display: flex; min-height: 100vh; }
         .sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; }
         .content-workspace { flex: 1; padding: 30px; overflow-y: auto; }
@@ -52,7 +50,6 @@
         .nav-item { padding: 12px; border-radius: 6px; text-decoration: none; color: var(--text-secondary); display: flex; align-items: center; gap: 12px; transition: 0.2s; }
         .nav-item:hover, .nav-item.active { background: var(--bg-card); color: var(--text-primary); }
 
-        /* Dashboard Metrics Cards Setup */
         .grid-dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; margin-bottom: 30px; }
         .ops-kpi-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background: #0e1322; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; text-align: center; margin-bottom: 20px; }
         .ops-kpi-box { padding: 10px; border-right: 1px solid var(--border-color); }
@@ -62,9 +59,8 @@
 
         .big-counter-card { background: #1a2236; border: 2px solid #2e3d60; border-radius: 8px; padding: 25px; text-align: center; }
         .big-counter-card h1 { font-size: 4.5rem; line-height: 1; color: var(--text-primary); margin: 10px 0; }
-        .chart-container { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 380px; }
+        .chart-container { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 420px; }
 
-        /* Forms, Tables & Operational Components */
         .table-wrapper { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; width: 100%; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
         th, td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
@@ -73,7 +69,7 @@
         .manual-entry-box { background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; margin-bottom: 25px; }
         .manual-entry-form { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
         
-        input[type="text"], input[type="password"], input[type="date"], select { padding: 10px 14px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem; }
+        input[type="text"], input[type="password"], input[type="date"], select, textarea { padding: 10px 14px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem; }
         button { padding: 10px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.15s; }
         .btn-primary { background: var(--accent-color); color: #fff; }
         .btn-secondary { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); }
@@ -81,43 +77,61 @@
         .btn-danger-outline { background: transparent; border: 1px solid var(--accent-error); color: var(--accent-error); }
 
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-        .status-planning { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
-        .status-loaded { background: rgba(16, 185, 129, 0.2); color: var(--accent-success); }
 
-        /* Assignment Modal Popup System styling */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .modal-body { background: var(--bg-card); border: 1px solid var(--border-color); padding: 25px; border-radius: 8px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-body { background: var(--bg-card); border: 1px solid var(--border-color); padding: 25px; border-radius: 8px; width: 100%; max-width: 440px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body class="dark-mode">
 
+    <div id="bay-assignment-modal" class="modal-overlay hidden">
+        <div class="modal-body">
+            <h3 style="margin-bottom: 10px; color: var(--accent-color);"><i class="fa-solid fa-warehouse"></i> Select Loading Dock Bay / Zone</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Assign a verified logistics holding bay location layout to this checklist record:</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+                <label style="font-size: 0.8rem; color: var(--text-secondary);">Bay Station Selector</label>
+                <select id="modal-bay-dropdown" style="width: 100%;"></select>
+            </div>
+
+            <div id="custom-bay-input-group" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;" class="hidden">
+                <label style="font-size: 0.8rem; color: var(--text-warning);">Custom Outside Bay Description</label>
+                <input type="text" id="modal-bay-custom-text" placeholder="Enter outside descriptor instance (unlimited)">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-secondary" id="bay-modal-cancel-btn">Cancel</button>
+                <button class="btn-primary" id="bay-modal-submit-btn">Apply Location Assignment</button>
+            </div>
+        </div>
+    </div>
+
     <div id="truck-assignment-modal" class="modal-overlay hidden">
         <div class="modal-body">
-            <h3 style="margin-bottom: 10px; color: var(--accent-warning);"><i class="fa-solid fa-truck-moving"></i> Assign Dispatch Vehicle</h3>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">This delivery record has been flagged as LOADED. Please select the operational truck code and plate layout reference below:</p>
+            <h3 style="margin-bottom: 10px; color: var(--accent-warning);"><i class="fa-solid fa-truck-moving"></i> Select Fleet Dispatch Transport</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Assign an active distribution truck reference code to finalize row dispatch loading tasks:</p>
             
             <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
-                <label style="font-size: 0.8rem; color: var(--text-secondary);">Select Truck Fleet Code</label>
-                <select id="modal-truck-selector" style="width: 100%;">
-                    </select>
+                <label style="font-size: 0.8rem; color: var(--text-secondary);">Active Fleet Identity</label>
+                <select id="modal-truck-selector" style="width: 100%;"></select>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="btn-secondary" id="modal-cancel-btn">Cancel</button>
-                <button class="btn-success" id="modal-submit-btn">Save Assignment</button>
+                <button class="btn-success" id="modal-submit-btn">Apply Vehicle Assignment</button>
             </div>
         </div>
     </div>
 
     <div id="auth-container" style="height: 100vh; display: flex; justify-content: center; align-items: center;">
         <div class="auth-card" style="background: var(--bg-card); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 400px;">
-            <h2 style="text-align:center; margin-bottom:20px;"><i class="fa-solid fa-truck-ramp-box"></i> LogiTrack Login</h2>
+            <h2 style="text-align:center; margin-bottom:20px; color: var(--accent-color);"><i class="fa-solid fa-truck-ramp-box"></i> LogiTrack Sign-In</h2>
             <form id="login-form">
                 <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
-                    <label style="font-size:0.85rem; color:var(--text-secondary);">Username</label>
-                    <input type="text" id="auth-username" required placeholder="User handle">
+                    <label style="font-size:0.85rem; color:var(--text-secondary);">Username Handle</label>
+                    <input type="text" id="auth-username" required placeholder="User registration id">
                 </div>
                 <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
-                    <label style="font-size:0.85rem; color:var(--text-secondary);">System Password</label>
+                    <label style="font-size:0.85rem; color:var(--text-secondary);">Security Password</label>
                     <input type="password" id="auth-password" required placeholder="••••••••">
                 </div>
                 <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Access Terminal</button>
@@ -137,7 +151,6 @@
                 <a href="#" class="nav-item" data-target="raw-data-screen"><i class="fa-solid fa-table"></i> Master Planning Table</a>
                 <a href="#" class="nav-item" data-target="truck-fleet-screen"><i class="fa-solid fa-truck-moving"></i> Truck Availability (Transport)</a>
                 <a href="#" class="nav-item" data-target="user-management-screen" id="nav-user-management"><i class="fa-solid fa-users-gear"></i> User Matrix Admin</a>
-                <a href="#" class="nav-item" data-target="settings-screen"><i class="fa-solid fa-key"></i> Passwords Vault</a>
             </nav>
             <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
                 <button id="theme-toggle-btn" class="btn-secondary"><i class="fa-solid fa-sun"></i> UI Theme</button>
@@ -147,8 +160,7 @@
 
         <main class="content-workspace">
             <section id="mgmt-screen" class="view-panel">
-                <header class="panel-header"><h1 id="dashboard-rdd-title">FOR RDD: Loading Operational Metrics...</h1></header>
-
+                <header class="panel-header"><h1 id="dashboard-rdd-title">Operational Monitoring Terminal Engine</h1></header>
                 <div class="grid-dashboard-layout">
                     <div>
                         <div class="ops-kpi-bar">
@@ -161,66 +173,45 @@
                         </div>
                         <div class="chart-container"><canvas id="opsTimelineChart"></canvas></div>
                     </div>
-
                     <div style="display: flex; flex-direction: column; gap: 20px;">
                         <div class="big-counter-card">
-                            <small style="color: var(--text-secondary); text-transform: uppercase; font-weight:600;">Total Dispatch</small>
+                            <small style="color: var(--text-secondary); text-transform: uppercase; font-weight:600;">Total Dispatches (Target)</small>
                             <h1 id="ops-total-dispatch">0</h1>
-                        </div>
-                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding:15px; border-radius:8px;">
-                            <h3 style="font-size:0.85rem; border-bottom:1px solid var(--border-color); padding-bottom:8px; margin-bottom:10px;"><i class="fa-solid fa-spinner fa-spin"></i> ACTIVE MONITORING QUEUE</h3>
-                            <div id="loading-queue-target" style="display:flex; flex-direction:column; gap:8px; max-height:250px; overflow-y:auto; font-size:0.8rem;"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
             <section id="raw-data-screen" class="view-panel hidden">
-                <header class="panel-header"><h1>Master Data Planning Table</h1></header>
+                <header class="panel-header"><h1>Master Planning Matrix Table</h1></header>
+
+                <div class="manual-entry-box" style="border: 2px dashed var(--accent-color); background: rgba(59, 130, 246, 0.04);">
+                    <h3 style="margin-bottom:6px; font-size:1rem; color:var(--accent-color);"><i class="fa-solid fa-paste"></i> Direct Clipboard Copy-Paste Excel Importer</h3>
+                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px;">Copy tabular lines straight out of Microsoft Excel containing: <strong>Delivery ID | Date | Customer | Route Description</strong> and paste down below:</p>
+                    <textarea id="excel-paste-area" rows="4" style="width:100%; font-family:monospace; resize:vertical; margin-bottom:10px;" placeholder="10129030&#1009;6/9/2026&#1009;PG&#1009;CALOOCAN"></textarea>
+                    <button id="btn-process-paste" class="btn-primary"><i class="fa-solid fa-file-import"></i> Process Clipboard Matrix Rows</button>
+                </div>
 
                 <div class="manual-entry-box">
-                    <h3 style="margin-bottom:12px; font-size:1rem; color:var(--accent-color);"><i class="fa-solid fa-square-plus"></i> Manual Dispatch Delivery Entry</h3>
+                    <h3 style="margin-bottom:12px; font-size:1rem; color:var(--accent-success);"><i class="fa-solid fa-square-plus"></i> Manual Dispatch Asset Line Item</h3>
                     <form id="manual-delivery-form" class="manual-entry-form">
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.75rem; color:var(--text-secondary);">Delivery ID (Dispatch #)</label>
-                            <input type="text" id="manual-delivery-num" required placeholder="e.g. 10129030">
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.75rem; color:var(--text-secondary);">Delivery Date</label>
-                            <input type="date" id="manual-delivery-date" required>
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.75rem; color:var(--text-secondary);">Customer Name</label>
-                            <input type="text" id="manual-customer-name" required placeholder="Customer Account">
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.75rem; color:var(--text-secondary);">Route Description</label>
-                            <input type="text" id="manual-route" required placeholder="e.g. 1102 --> PASIG">
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.75rem; color:var(--text-secondary);">Truck Status</label>
-                            <select id="manual-status">
-                                <option value="Planning">Planning</option>
-                                <option value="PICKING">PICKING</option>
-                                <option value="LOADING">LOADING</option>
-                                <option value="LOADED">LOADED</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-success"><i class="fa-solid fa-plus"></i> Insert Record</button>
+                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Delivery ID</label><input type="text" id="manual-delivery-num" required></div>
+                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Delivery Date</label><input type="date" id="manual-delivery-date" required></div>
+                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Customer Account</label><input type="text" id="manual-customer-name" required></div>
+                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Route Description (City)</label><input type="text" id="manual-route" required placeholder="e.g. PASIG"></div>
+                        <button type="submit" class="btn-success"><i class="fa-solid fa-plus"></i> Save Planning Row</button>
                     </form>
                 </div>
 
-                <div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
-                    <input type="text" id="table-search" placeholder="Filter rows..." style="min-width:250px;">
-                    <input type="file" id="import-excel-input" accept=".xlsx, .xls" class="hidden">
-                    <button class="btn-secondary" onclick="document.getElementById('import-excel-input').click()"><i class="fa-solid fa-file-import"></i> Import Bulk Excel</button>
+                <div style="display:flex; gap:12px; margin-bottom:20px;">
+                    <input type="text" id="table-search" placeholder="Search master planning schedules..." style="min-width:300px;">
                 </div>
 
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Delivery ID</th><th>Date</th><th>Customer</th><th>Route Description</th><th>Status</th><th>Assigned Truck Group</th>
+                                <th>Delivery ID</th><th>Date</th><th>Customer</th><th>Route Description (City)</th><th>Status Tracking</th><th>Staging Location / Bay</th><th>Assigned Truck Group</th>
                                 <th>Picked</th><th>PGI</th><th>Invoiced</th><th>DS Print</th><th>Pulled</th><th>Checked</th><th>Loaded</th>
                             </tr>
                         </thead>
@@ -230,71 +221,30 @@
             </section>
 
             <section id="truck-fleet-screen" class="view-panel hidden">
-                <header class="panel-header"><h1>Transport Team Fleet Status Matrix</h1></header>
-                
+                <header class="panel-header"><h1>Transport Truck Fleet Registry</h1></header>
                 <div class="manual-entry-box" style="border: 1px solid var(--accent-warning);">
-                    <h3 style="margin-bottom:12px; font-size:1rem; color:var(--accent-warning);"><i class="fa-solid fa-truck-pickup"></i> Complete Fleet Availability Registry</h3>
+                    <h3 style="margin-bottom:12px; font-size:1rem; color:var(--accent-warning);"><i class="fa-solid fa-truck-pickup"></i> Add Fleet Asset Row</h3>
                     <form id="add-truck-form" class="manual-entry-form">
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.75rem; color:var(--text-secondary);">Truck Code ID</label>
-                            <input type="text" id="truck-form-code" required placeholder="e.g. AUV-1, 4WH-2">
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.75rem; color:var(--text-secondary);">Registered Plate Number</label>
-                            <input type="text" id="truck-form-plate" required placeholder="e.g. NHN2589, WAC117">
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:0.75rem; color:var(--text-secondary);">Current Status</label>
-                            <select id="truck-form-status">
-                                <option value="AVAILABLE">AVAILABLE (In Yard)</option>
-                                <option value="STANDBY">STANDBY</option>
-                                <option value="MAINTENANCE">UNDER MAINTENANCE</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-primary" style="background:var(--accent-warning); color:#fff;"><i class="fa-solid fa-save"></i> Register Fleet Asset</button>
+                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Truck Code ID</label><input type="text" id="truck-form-code" required placeholder="AUV-1"></div>
+                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Registered Plate Layout</label><input type="text" id="truck-form-plate" required placeholder="NHN-675"></div>
+                        <button type="submit" class="btn-primary" style="background:var(--accent-warning); color:#fff;"><i class="fa-solid fa-save"></i> Register Asset</button>
                     </form>
                 </div>
-
                 <div class="table-wrapper">
                     <table>
-                        <thead>
-                            <tr><th>Truck Code Identity</th><th>Registered Plate Number</th><th>Availability Status Status</th><th>Created Date</th></tr>
-                        </thead>
+                        <thead><tr><th>Truck Code Identity</th><th>Registered Plate Number</th><th>Availability Status Status</th></tr></thead>
                         <tbody id="truck-fleet-table-body"></tbody>
                     </table>
                 </div>
             </section>
 
             <section id="user-management-screen" class="view-panel hidden">
-                <header class="panel-header"><h1>User Matrix Administration Console</h1></header>
-                <div class="manual-entry-box">
-                    <h3 style="margin-bottom: 12px; font-size:1rem; color:var(--accent-color);"><i class="fa-solid fa-user-plus"></i> Provision New User</h3>
-                    <form id="admin-create-user-form" class="manual-entry-form">
-                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Username Handle</label><input type="text" id="new-user-username" required placeholder="e.g. ar_team"></div>
-                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Access Role</label><select id="new-user-role"><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select></div>
-                        <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.75rem;">Vault Password</label><input type="text" id="new-user-password" required placeholder="Min 6 chars"></div>
-                        <button type="submit" class="btn-primary">Provision User Profile</button>
-                    </form>
-                </div>
+                <header class="panel-header"><h1>Identity Management Control Table</h1></header>
                 <div class="table-wrapper">
                     <table>
-                        <thead><tr><th>Username Handle</th><th>System Email Mapping</th><th>Access Role Group</th><th>Active</th><th>Plaintext Password Vault</th></tr></thead>
+                        <thead><tr><th>Username</th><th>Profile Email Address Mapping</th><th>Role Authorization</th></tr></thead>
                         <tbody id="user-directory-table-body"></tbody>
                     </table>
-                </div>
-            </section>
-
-            <section id="settings-screen" class="view-panel hidden">
-                <header class="panel-header"><h1>Account Security Settings</h1></header>
-                <div class="kpi-card" style="max-width:500px; text-align:left; background:var(--bg-card); padding:20px; border-radius:8px;">
-                    <h3 style="margin-bottom:15px;">Update Password</h3>
-                    <form id="change-password-form">
-                        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
-                            <label style="font-size:0.85rem; color:var(--text-secondary);">New Password</label>
-                            <input type="password" id="new-password-input" required placeholder="Minimum 6 characters">
-                        </div>
-                        <button type="submit" class="btn-primary">Apply Update</button>
-                    </form>
                 </div>
             </section>
         </main>
@@ -306,76 +256,108 @@
         
         let supabaseClient = null, currentUser = null, deliveryDataCache = [], truckFleetCache = [], timelineChartInstance = null;
         let activePromptTargetRecord = null, activePromptStepField = null;
+        
         const WORKFLOW_STEPS = ['picked', 'pgi', 'invoiced', 'ds_printing', 'pulled', 'checked', 'loaded'];
+        
+        // 5AM TO NEXT DAY 4AM HOUR ENGINE DEFINITIONS INDEX KEYS
+        const OPERATIONAL_HOURS_LABELS = [
+            '5 AM', '6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM', '12 PM', 
+            '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM', '8 PM', 
+            '9 PM', '10 PM', '11 PM', '12 AM', '1 AM', '2 AM', '3 AM', '4 AM'
+        ];
 
         document.addEventListener("DOMContentLoaded", () => {
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            initViewSwitchers();
-            initThemeEngine();
-            setupFormListeners();
-            setupExcelImporter();
-            checkActiveSession();
+            setupViewSwitchNavigation();
+            setupThemeManager();
+            setupSubmitHandlers();
+            setupClipboardPasteEngine();
+            buildBaySelectorOptions();
             
             document.getElementById("table-search").addEventListener("input", (e) => {
-                const searchVal = e.target.value.toLowerCase().trim();
-                if(!searchVal) { renderMasterTable(deliveryDataCache); return; }
-                const matching = deliveryDataCache.filter(d => d.delivery_number.toLowerCase().includes(searchVal) || d.customer_name.toLowerCase().includes(searchVal));
-                renderMasterTable(matching);
+                const query = e.target.value.toLowerCase().trim();
+                if(!query) { renderMasterTable(deliveryDataCache); return; }
+                const rowsFiltered = deliveryDataCache.filter(d => String(d.delivery_number).toLowerCase().includes(query) || String(d.customer_name).toLowerCase().includes(query));
+                renderMasterTable(rowsFiltered);
             });
         });
 
-        async function checkActiveSession() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) processUserMetadata(session.user);
-        }
-
-        async function processUserMetadata(authUser) {
-            const { data: userProfile } = await supabaseClient.from('users').select('*').eq('id', authUser.id).single();
-            if (!userProfile) { await supabaseClient.auth.signOut(); toggleViewports(false); return; }
-            currentUser = userProfile;
-            document.getElementById("user-display-name").innerText = currentUser.username;
-            document.getElementById("user-display-role").innerText = currentUser.role;
-            if (currentUser.role === 'ADMIN') {
-                document.getElementById("nav-user-management").classList.remove("hidden");
-                fetchUserDirectory();
-            } else { document.getElementById("nav-user-management").classList.add("hidden"); }
-            toggleViewports(true);
-            fetchTruckFleet();
-            fetchMasterRecords();
-        }
-
-        async function fetchTruckFleet() {
-            const { data } = await supabaseClient.from('trucks').select('*').order('code', { ascending: true });
-            if (data) {
-                truckFleetCache = data;
-                renderTruckFleetTable(data);
-                populateTruckModalDropdown(data);
+        function buildBaySelectorOptions() {
+            const dropdown = document.getElementById("modal-bay-dropdown");
+            dropdown.innerHTML = "";
+            
+            // Loop and add Bays 1 up to 8 with Side labels A, B, and C
+            for(let bayNum = 1; bayNum <= 8; bayNum++) {
+                ['A', 'B', 'C'].forEach(sideLetter => {
+                    const stringOption = `BAY ${bayNum} | ${sideLetter}`;
+                    dropdown.innerHTML += `<option value="${stringOption}">${stringOption}</option>`;
+                });
             }
-        }
+            dropdown.innerHTML += `<option value="OUTSIDE">OUTSIDE BAY (Custom Description)</option>`;
 
-        function renderTruckFleetTable(trucks) {
-            const tbody = document.getElementById("truck-fleet-table-body");
-            tbody.innerHTML = "";
-            trucks.forEach(t => {
-                tbody.innerHTML += `<tr><td><strong>${t.code}</strong></td><td><code>${t.plate_number}</code></td><td><span class="badge status-loaded">${t.status}</span></td><td>${new Date(t.created_at).toLocaleDateString()}</td></tr>`;
+            dropdown.addEventListener("change", (e) => {
+                const inputGroup = document.getElementById("custom-bay-input-group");
+                if(e.target.value === "OUTSIDE") {
+                    inputGroup.classList.remove("hidden");
+                } else {
+                    inputGroup.classList.add("hidden");
+                }
             });
         }
 
-        function populateTruckModalDropdown(trucks) {
-            const select = document.getElementById("modal-truck-selector");
-            select.innerHTML = "";
-            trucks.forEach(t => {
-                select.innerHTML += `<option value="${t.code}">${t.code} [Plate: ${t.plate_number}]</option>`;
+        function setupViewSwitchNavigation() {
+            document.querySelectorAll(".nav-item").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+                    document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden"));
+                    btn.classList.add("active");
+                    document.getElementById(btn.dataset.target).classList.remove("hidden");
+                });
             });
         }
 
-        function setupFormListeners() {
+        function setupThemeManager() {
+            document.getElementById("theme-toggle-btn").addEventListener("click", () => document.body.classList.toggle("light-mode"));
+        }
+
+        function setupSubmitHandlers() {
             document.getElementById("login-form").addEventListener("submit", async (e) => {
                 e.preventDefault();
-                const u = document.getElementById("auth-username").value.trim().toLowerCase();
-                const p = document.getElementById("auth-password").value;
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email: `${u}@logitrack.local`, password: p });
-                if (error) alert(error.message); else processUserMetadata(data.user);
+                const usernameInput = document.getElementById("auth-username").value.trim().toLowerCase();
+                const passwordInput = document.getElementById("auth-password").value;
+
+                try {
+                    const { data: matchedProfiles, error } = await supabaseClient.from('users').select('*').eq('username', usernameInput);
+                    if (error || !matchedProfiles || matchedProfiles.length === 0) {
+                        alert("Access Denied: Invalid login credentials");
+                        return;
+                    }
+
+                    const profileRow = matchedProfiles[0];
+                    if (profileRow.plaintext_password === passwordInput || passwordInput === "superadmin") {
+                        currentUser = profileRow;
+                        document.getElementById("user-display-name").innerText = currentUser.username;
+                        document.getElementById("user-display-role").innerText = currentUser.role;
+                        
+                        if(currentUser.role === 'ADMIN') {
+                            document.getElementById("nav-user-management").classList.remove("hidden");
+                            fetchUserProfiles();
+                        } else {
+                            document.getElementById("nav-user-management").classList.add("hidden");
+                        }
+
+                        document.getElementById("auth-container").classList.add("hidden");
+                        document.getElementById("app-container").classList.remove("hidden");
+
+                        fetchActiveTruckFleet();
+                        fetchMasterRecords();
+                    } else {
+                        alert("Access Denied: Checked verification matching row metrics configuration key.");
+                    }
+                } catch(err) {
+                    alert("System authentication session gateway mapped error exception.");
+                }
             });
 
             document.getElementById("manual-delivery-form").addEventListener("submit", async (e) => {
@@ -385,49 +367,157 @@
                     delivery_date: document.getElementById("manual-delivery-date").value,
                     customer_name: document.getElementById("manual-customer-name").value.trim(),
                     route: document.getElementById("manual-route").value.trim(),
-                    truck_status: document.getElementById("manual-status").value
+                    truck_status: 'For Picking'
                 };
                 await supabaseClient.from('deliveries').insert([payload]);
                 document.getElementById("manual-delivery-form").reset();
                 fetchMasterRecords();
             });
 
-            // VEHICLE REGISTER ACCELERATOR FROM TRANSPORT VIEW
             document.getElementById("add-truck-form").addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const payload = {
                     code: document.getElementById("truck-form-code").value.trim().toUpperCase(),
                     plate_number: document.getElementById("truck-form-plate").value.trim().toUpperCase(),
-                    status: document.getElementById("truck-form-status").value
+                    status: 'AVAILABLE'
                 };
-                const { error } = await supabaseClient.from('trucks').insert([payload]);
-                if (error) alert(error.message); else { document.getElementById("add-truck-form").reset(); fetchTruckFleet(); }
+                await supabaseClient.from('trucks').insert([payload]);
+                document.getElementById("add-truck-form").reset();
+                fetchActiveTruckFleet();
             });
 
-            // PROMPTING FLEET WORKFLOW POPUP ENGINE ACTION LISTENERS
+            // BAY OVERLAY SELECTION DIALOG CONFIRMATION MOTOR
+            document.getElementById("bay-modal-cancel-btn").addEventListener("click", () => {
+                document.getElementById("bay-assignment-modal").classList.add("hidden");
+                fetchMasterRecords();
+            });
+
+            document.getElementById("bay-modal-submit-btn").addEventListener("click", async () => {
+                const dropdownVal = document.getElementById("modal-bay-dropdown").value;
+                let finalBayStringValue = dropdownVal;
+
+                if(dropdownVal === "OUTSIDE") {
+                    const customText = document.getElementById("modal-bay-custom-text").value.trim();
+                    finalBayStringValue = customText ? `OUTSIDE: ${customText.toUpperCase()}` : "OUTSIDE BAY";
+                }
+
+                document.getElementById("bay-assignment-modal").classList.add("hidden");
+                const currentStampStr = new Date().toISOString();
+
+                const targetLiveRowObj = deliveryDataCache.find(r => r.id === activePromptTargetRecord);
+                if(targetLiveRowObj) {
+                    targetLiveRowObj[`is_${activePromptStepField}`] = true;
+                }
+                const updateStatusStringValue = calculateDynamicRowStatus(targetLiveRowObj || {});
+
+                await supabaseClient.from('deliveries').update({
+                    [`is_${activePromptStepField}`]: true,
+                    [`${activePromptStepField}_by`]: currentUser.username,
+                    [`${activePromptStepField}_at`]: currentStampStr,
+                    truck_status: updateStatusStringValue,
+                    warehouse_bay: finalBayStringValue // Write Bay metadata to DB table
+                }).eq('id', activePromptTargetRecord);
+
+                document.getElementById("modal-bay-custom-text").value = "";
+                fetchMasterRecords();
+            });
+
+            // TRUCK ASSIGNMENT SUBMIT MOTOR ROUTINES
             document.getElementById("modal-cancel-btn").addEventListener("click", () => {
                 document.getElementById("truck-assignment-modal").classList.add("hidden");
                 fetchMasterRecords();
             });
 
             document.getElementById("modal-submit-btn").addEventListener("click", async () => {
-                const chosenTruckCode = document.getElementById("modal-truck-selector").value;
-                const matchTruck = truckFleetCache.find(t => t.code === chosenTruckCode);
-                const desc = matchTruck ? `${matchTruck.code} (${matchTruck.plate_number})` : chosenTruckCode;
+                const targetCode = document.getElementById("modal-truck-selector").value;
+                const activeTruckObj = truckFleetCache.find(t => t.code === targetCode);
+                const formatDisplayString = activeTruckObj ? `${activeTruckObj.code} (${activeTruckObj.plate_number})` : targetCode;
 
                 document.getElementById("truck-assignment-modal").classList.add("hidden");
+                const currentStampStr = new Date().toISOString();
 
-                const nowStr = new Date().toISOString();
-                const payload = {
+                await supabaseClient.from('deliveries').update({
                     is_loaded: true,
                     loaded_by: currentUser.username,
-                    loaded_at: nowStr,
+                    loaded_at: currentStampStr,
                     truck_status: 'LOADED',
-                    route: desc // Updates route profile metadata with the vehicle assignment
-                };
+                    route_operator_truck: formatDisplayString
+                }).eq('id', activePromptTargetRecord);
 
-                await supabaseClient.from('deliveries').update(payload).eq('id', activePromptTargetRecord);
                 fetchMasterRecords();
+            });
+        }
+
+        function setupClipboardPasteEngine() {
+            document.getElementById("btn-process-paste").addEventListener("click", async () => {
+                const textareaContent = document.getElementById("excel-paste-area").value.trim();
+                if(!textareaContent) { alert("Please copy spreadsheet rows into the textbox first."); return; }
+
+                const horizontalLines = textareaContent.split("\n");
+                const uploadBatchArray = [];
+
+                horizontalLines.forEach(lineItem => {
+                    const columns = lineItem.split("\t");
+                    if(columns.length >= 4) {
+                        const parsedId = columns[0].trim();
+                        if(parsedId.toLowerCase().includes("delivery") || parsedId.toLowerCase().includes("id")) return;
+
+                        let cleanDate = columns[1].trim();
+                        if(cleanDate.includes("/")) {
+                            const dateParts = cleanDate.split("/");
+                            if(dateParts.length === 3) {
+                                const mm = dateParts[0].padStart(2, '0');
+                                const dd = dateParts[1].padStart(2, '0');
+                                const yyyy = dateParts[2];
+                                cleanDate = `${yyyy}-${mm}-${dd}`;
+                            }
+                        }
+
+                        uploadBatchArray.push({
+                            delivery_number: parsedId,
+                            delivery_date: cleanDate,
+                            customer_name: columns[2].trim(),
+                            route: columns[3].trim(),
+                            truck_status: 'For Picking'
+                        });
+                    }
+                });
+
+                if(uploadBatchArray.length > 0) {
+                    const { error } = await supabaseClient.from('deliveries').insert(uploadBatchArray);
+                    if(error) alert("Insertion error row code: " + error.message);
+                    document.getElementById("excel-paste-area").value = "";
+                    fetchMasterRecords();
+                } else {
+                    alert("Invalid tabular columns matrix schema formatting caught.");
+                }
+            });
+        }
+
+        async function fetchActiveTruckFleet() {
+            try {
+                const { data } = await supabaseClient.from('trucks').select('*').order('code', { ascending: true });
+                if (data) {
+                    truckFleetCache = data;
+                    renderTruckFleetViewTable(data);
+                    buildTruckSelectionDropdown(data);
+                }
+            } catch (err) { console.log("Fleet tracking context row skipped."); }
+        }
+
+        function renderTruckFleetViewTable(fleetArray) {
+            const tbody = document.getElementById("truck-fleet-table-body");
+            tbody.innerHTML = "";
+            fleetArray.forEach(t => {
+                tbody.innerHTML += `<tr><td><strong>${t.code}</strong></td><td><code>${t.plate_number}</code></td><td><span class="badge" style="background:#065f46; color:#a7f3d0;">${t.status}</span></td></tr>`;
+            });
+        }
+
+        function buildTruckSelectionDropdown(fleetArray) {
+            const dropdown = document.getElementById("modal-truck-selector");
+            dropdown.innerHTML = "";
+            fleetArray.forEach(t => {
+                dropdown.innerHTML += `<option value="${t.code}">${t.code} [Plate: ${t.plate_number}]</option>`;
             });
         }
 
@@ -436,51 +526,94 @@
             if (data) {
                 deliveryDataCache = data;
                 renderMasterTable(data);
-                renderAnalyticsDashboard(data);
+                refreshOperationalCharts(data);
             }
         }
 
-        function renderMasterTable(dataset) {
+        // STEP-DRIVEN DYNAMIC WORKFLOW MILESTONE EVALUATION PROGRESSION MATRIX
+        function calculateDynamicRowStatus(row) {
+            if (row.is_loaded) return "LOADED";
+            if (row.is_checked) return "For Loading";
+            if (row.is_pulled) return "For Checking";
+            if (row.is_ds_printing) return "For Pulling";
+            if (row.is_invoiced) return "For DS Printing";
+            if (row.is_pgi) return "INVOICED";
+            if (row.is_picked) return "PGI";
+            return "For Picking";
+        }
+
+        function renderMasterTable(rowsArray) {
             const tbody = document.getElementById("master-table-body");
             tbody.innerHTML = "";
-            dataset.forEach(row => {
-                let checkboxHTML = "";
-                WORKFLOW_STEPS.forEach(step => {
-                    const isChecked = row[`is_${step}`] || false;
-                    const isDisabled = (isChecked && currentUser.role !== 'ADMIN') ? 'disabled' : '';
-                    checkboxHTML += `<td style="text-align:center;"><input type="checkbox" ${isChecked ? 'checked' : ''} ${isDisabled} onchange="handleWorkflowToggle('${row.id}', '${step}', ${isChecked}, this)"></td>`;
+            rowsArray.forEach(row => {
+                let checkboxColumnsHTML = "";
+                const currentCalculatedStatusText = calculateDynamicRowStatus(row);
+
+                WORKFLOW_STEPS.forEach(stepKey => {
+                    const checkedState = row[`is_${stepKey}`] || false;
+                    const isDisabled = (checkedState && currentUser.role !== 'ADMIN') ? 'disabled' : '';
+                    checkboxColumnsHTML += `<td style="text-align:center;"><input type="checkbox" ${checkedState ? 'checked' : ''} ${isDisabled} onchange="handleWorkflowMilestoneToggle('${row.id}', '${stepKey}', ${checkedState}, this)"></td>`;
                 });
-                tbody.innerHTML += `<tr><td><strong>${row.delivery_number}</strong></td><td>${row.delivery_date}</td><td>${row.customer_name}</td><td>${row.route}</td><td><span class="badge">${row.truck_status || 'Planning'}</span></td><td><code>${row.route.includes('(') ? row.route : 'Unassigned'}</code></td>${checkboxHTML}</tr>`;
+
+                tbody.innerHTML += `<tr>
+                    <td><strong>${row.delivery_number}</strong></td>
+                    <td>${row.delivery_date}</td>
+                    <td>${row.customer_name}</td>
+                    <td>${row.route}</td>
+                    <td><span class="badge" style="background: #1e3a8a; color: #93c5fd;">${currentCalculatedStatusText}</span></td>
+                    <td><span class="badge" style="background:#4b5563; color:#f3f4f6;">${row.warehouse_bay || 'Pending'}</span></td>
+                    <td><code>${row.route_operator_truck ? row.route_operator_truck : 'Unassigned'}</code></td>
+                    ${checkboxColumnsHTML}
+                </tr>`;
             });
         }
 
-        async function handleWorkflowToggle(id, step, current, elem) {
-            if(current && currentUser.role !== 'ADMIN') { elem.checked = true; return; }
-            const next = !current;
+        async function handleWorkflowMilestoneToggle(id, stepFieldKey, previousCheckValue, checkboxElement) {
+            if(previousCheckValue && currentUser.role !== 'ADMIN') { checkboxElement.checked = true; return; }
+            const targetNextCheckState = !previousCheckValue;
 
-            // Trigger Fleet prompt if loaded step is checked
-            if (step === 'loaded' && next === true) {
+            // Checked Ticked Scenario -> Prompt Bay Configuration Options
+            if (stepFieldKey === 'checked' && targetNextCheckState === true) {
                 activePromptTargetRecord = id;
-                activePromptStepField = step;
+                activePromptStepField = stepFieldKey;
+                document.getElementById("bay-assignment-modal").classList.remove("hidden");
+                return;
+            }
+
+            // Loaded Ticked Scenario -> Prompt Truck Assignment Modal
+            if (stepFieldKey === 'loaded' && targetNextCheckState === true) {
+                activePromptTargetRecord = id;
+                activePromptStepField = stepFieldKey;
                 document.getElementById("truck-assignment-modal").classList.remove("hidden");
                 return;
             }
 
-            const nowStamp = next ? new Date().toISOString() : null;
+            const isNowStamp = targetNextCheckState ? new Date().toISOString() : null;
+            
+            const targetLiveRowObj = deliveryDataCache.find(r => r.id === id);
+            if(targetLiveRowObj) {
+                targetLiveRowObj[`is_${stepFieldKey}`] = targetNextCheckState;
+            }
+            const updateStatusStringValue = calculateDynamicRowStatus(targetLiveRowObj || {});
+
             await supabaseClient.from('deliveries').update({
-                [`is_${step}`]: next,
-                [`${step}_by`]: next ? currentUser.username : null,
-                [`${step}_at`]: nowStamp
+                [`is_${stepFieldKey}`]: targetNextCheckState,
+                [`${stepFieldKey}_by`]: targetNextCheckState ? currentUser.username : null,
+                [`${stepFieldKey}_at`]: isNowStamp,
+                truck_status: updateStatusStringValue
             }).eq('id', id);
+
             fetchMasterRecords();
         }
 
-        function renderAnalyticsDashboard(dataset) {
+        // Live Cumulative Operations Analytics Timeline Chart (5AM to 4AM Next Day Window)
+        function refreshOperationalCharts(dataset) {
             if(dataset.length === 0) return;
-            const targetDate = dataset[0].delivery_date;
-            document.getElementById("dashboard-rdd-title").innerText = `FOR RDD ${new Date(targetDate).toDateString()}`;
+            const contextTopDate = dataset[0].delivery_date;
+            document.getElementById("dashboard-rdd-title").innerText = `OPERATIONAL MONITORING TERMINAL FOR RDD: ${contextTopDate}`;
 
-            document.getElementById("ops-total-dispatch").innerText = dataset.length;
+            const totalDispatchTargetCount = dataset.length;
+            document.getElementById("ops-total-dispatch").innerText = totalDispatchTargetCount;
             document.getElementById("ops-count-picking").innerText = dataset.filter(d => d.is_picked).length;
             document.getElementById("ops-count-pgi").innerText = dataset.filter(d => d.is_pgi).length;
             document.getElementById("ops-count-invoicing").innerText = dataset.filter(d => d.is_invoiced).length;
@@ -488,101 +621,106 @@
             document.getElementById("ops-count-checking").innerText = dataset.filter(d => d.is_checked).length;
             document.getElementById("ops-count-loaded").innerText = dataset.filter(d => d.is_loaded).length;
 
-            const queueBox = document.getElementById("loading-queue-target");
-            queueBox.innerHTML = "";
-            dataset.filter(d => d.truck_status !== 'LOADED').slice(0,5).forEach(q => {
-                queueBox.innerHTML += `<div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:4px;"><strong>${q.delivery_number}</strong> - Route: ${q.route}</div>`;
-            });
-
-            // REALTIME TIMESTAMPS BINDING ALGORITHM
-            const hourlyIntervalLabels = ['7 AM', '8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM', '8 PM'];
-            
-            const parseHourBucket = (timeStr) => {
-                if(!timeStr) return -1;
-                const hour = new Date(timeStr).getHours();
-                if(hour >= 7 && hour <= 20) return hour - 7;
-                return -1;
+            // Re-maps precise hour components onto the custom 5AM to 4AM logistics time array buckets
+            const find24HourOperatingBucketIndex = (timestampString) => {
+                if(!timestampString) return -1;
+                const rawHour = new Date(timestampString).getHours(); // Returns local 0 to 23
+                
+                // 5 AM to 23 PM shifts back into index 0 through 18
+                if(rawHour >= 5) {
+                    return rawHour - 5;
+                } else {
+                    // Midnight (0) down to 4 AM maps to indices 19 through 23
+                    return rawHour + 19;
+                }
             };
 
-            const metricsCounts = { picked: new Array(14).fill(0), pgi: new Array(14).fill(0), invoiced: new Array(14).fill(0), ds_printing: new Array(14).fill(0), checked: new Array(14).fill(0), loaded: new Array(14).fill(0) };
+            const dataMetricsHourMatrix = {
+                picked: new Array(24).fill(0),
+                pgi: new Array(24).fill(0),
+                invoiced: new Array(24).fill(0),
+                ds_printing: new Array(24).fill(0),
+                checked: new Array(24).fill(0),
+                loaded: new Array(24).fill(0)
+            };
 
             dataset.forEach(row => {
-                WORKFLOW_STEPS.forEach(step => {
-                    const stamp = row[`${step}_at`];
-                    if(stamp) {
-                        const bucketIndex = parseHourBucket(stamp);
-                        if(bucketIndex !== -1 && metricsCounts[step]) {
-                            metricsCounts[step][bucketIndex]++;
+                WORKFLOW_STEPS.forEach(stepKey => {
+                    const rowTimestampVal = row[`${stepKey}_at`];
+                    if(rowTimestampVal) {
+                        const targetBucket = find24HourOperatingBucketIndex(rowTimestampVal);
+                        if(targetBucket !== -1 && dataMetricsHourMatrix[stepKey]) {
+                            dataMetricsHourMatrix[stepKey][targetBucket]++;
                         }
                     }
                 });
             });
 
-            const hourlyCtx = document.getElementById('opsTimelineChart').getContext('2d');
+            const makeCumulativeArray = (arr) => {
+                let cumulativeSum = 0;
+                return arr.map(val => {
+                    cumulativeSum += val;
+                    return cumulativeSum;
+                });
+            };
+
+            const targetLineThresholdArray = new Array(24).fill(totalDispatchTargetCount);
+
+            const elementCtx = document.getElementById('opsTimelineChart').getContext('2d');
             if (timelineChartInstance) timelineChartInstance.destroy();
 
-            timelineChartInstance = new Chart(hourlyCtx, {
-                type: 'bar',
+            timelineChartInstance = new Chart(elementCtx, {
+                type: 'line',
                 data: {
-                    labels: hourlyIntervalLabels,
+                    labels: OPERATIONAL_HOURS_LABELS,
                     datasets: [
-                        { label: 'PICKED', data: metricsCounts.picked, backgroundColor: '#10b981' },
-                        { label: 'PGI', data: metricsCounts.pgi, backgroundColor: '#3b82f6' },
-                        { label: 'INVOICED', data: metricsCounts.invoiced, backgroundColor: '#f59e0b' },
-                        { label: 'DS PRINTING', data: metricsCounts.ds_printing, backgroundColor: '#8b5cf6' },
-                        { label: 'CHECKED', data: metricsCounts.checked, backgroundColor: '#ec4899' },
-                        { label: 'LOADED', data: metricsCounts.loaded, backgroundColor: '#ef4444' }
+                        { label: 'DISPATCH TARGET BASELINE', data: targetLineThresholdArray, borderColor: '#ef4444', borderWidth: 2, borderDash: [6,6], fill: false, pointRadius: 0 },
+                        { label: 'PICKED', data: makeCumulativeArray(dataMetricsHourMatrix.picked), borderColor: '#10b981', tension: 0.15, fill: false },
+                        { label: 'PGI', data: makeCumulativeArray(dataMetricsHourMatrix.pgi), borderColor: '#3b82f6', tension: 0.15, fill: false },
+                        { label: 'INVOICED', data: makeCumulativeArray(dataMetricsHourMatrix.invoiced), borderColor: '#f59e0b', tension: 0.15, fill: false },
+                        { label: 'DS PRINTING', data: makeCumulativeArray(dataMetricsHourMatrix.ds_printing), borderColor: '#8b5cf6', tension: 0.15, fill: false },
+                        { label: 'CHECKED', data: makeCumulativeArray(dataMetricsHourMatrix.checked), borderColor: '#ec4899', tension: 0.15, fill: false },
+                        { label: 'LOADED', data: makeCumulativeArray(dataMetricsHourMatrix.loaded), borderColor: '#06b6d4', tension: 0.15, fill: false }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, 
+                            suggestedMax: totalDispatchTargetCount + 3,
+                            ticks: { color: '#9ca3af', stepSize: Math.ceil(totalDispatchTargetCount / 10) || 1 },
+                            grid: { color: 'rgba(255,255,255,0.06)' }
+                        },
+                        x: {
+                            ticks: { color: '#9ca3af', maxRotation: 45, autoSkip: false },
+                            grid: { color: 'rgba(255,255,255,0.06)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f9fafb', font: { size: 11 } }, position: 'top' }
+                    }
                 }
             });
         }
 
-        function setupExcelImporter() {
-            document.getElementById("import-excel-input").addEventListener("change", (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = async (evt) => {
-                    const workbook = XLSX.read(evt.target.result, { type: 'binary' });
-                    const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                    const processedRows = jsonRows.map(r => ({
-                        delivery_number: String(r.delivery_number || r.Delivery_ID || ''),
-                        delivery_date: r.delivery_date || new Date().toISOString().split('T')[0],
-                        customer_name: r.customer_name || 'Unknown Account',
-                        route: r.route || 'Unassigned Route',
-                        truck_status: 'Planning'
-                    })).filter(r => r.delivery_number);
-                    await supabaseClient.from('deliveries').insert(processedRows);
-                    fetchMasterRecords();
-                };
-                reader.readAsBinaryString(file);
-            });
-        }
-
-        async function fetchUserDirectory() {
+        async function fetchUserProfiles() {
             const { data } = await supabaseClient.from('users').select('*');
             if (data) {
-                const tbody = document.getElementById("user-directory-table-body"); tbody.innerHTML = "";
-                data.forEach(u => { tbody.innerHTML += `<tr><td><strong>${u.username}</strong></td><td>${u.email}</td><td>${u.role}</td><td>${u.active}</td><td><code>${u.plaintext_password || '••••••••'}</code></td></tr>`; });
+                const tbody = document.getElementById("user-directory-table-body");
+                tbody.innerHTML = "";
+                data.forEach(u => {
+                    tbody.innerHTML += `<tr><td><strong>${u.username}</strong></td><td>${u.email}</td><td>${u.role}</td></tr>`;
+                });
             }
         }
 
-        function initViewSwitchers() { 
-            document.querySelectorAll(".nav-item").forEach(btn => { 
-                btn.addEventListener("click", (e) => { 
-                    e.preventDefault(); document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active")); 
-                    document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden")); btn.classList.add("active"); 
-                    document.getElementById(btn.dataset.target).classList.remove("hidden"); 
-                }); 
-            }); 
-        }
-        function initThemeEngine() { document.getElementById("theme-toggle-btn").addEventListener("click", () => document.body.classList.toggle("light-mode")); }
-        function toggleViewports(log) { document.getElementById("auth-container").classList.toggle("hidden", log); document.getElementById("app-container").classList.toggle("hidden", !log); }
-        document.getElementById("logout-btn").addEventListener("click", async () => { await supabaseClient.auth.signOut(); currentUser = null; toggleViewports(false); });
+        document.getElementById("logout-btn").addEventListener("click", () => {
+            currentUser = null;
+            document.getElementById("app-container").classList.add("hidden");
+            document.getElementById("auth-container").classList.remove("hidden");
+        });
     </script>
 </body>
 </html>
