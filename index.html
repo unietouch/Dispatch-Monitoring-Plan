@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogiTrack | Delivery Planning & Monitoring</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-sidebar: #111827;
+            --bg-card: #1f2937;
+            --border-color: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --accent-color: #3b82f6;
+            --accent-success: #10b981;
+            --accent-error: #ef4444;
+        }
+
+        .light-mode {
+            --bg-main: #f3f4f6;
+            --bg-sidebar: #ffffff;
+            --bg-card: #ffffff;
+            --border-color: #e5e7eb;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --accent-color: #2563eb;
+            --accent-success: #16a34a;
+            --accent-error: #dc2626;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-primary); transition: background 0.3s; overflow-x: hidden; }
+        .hidden { display: none !important; }
+
+        /* Dashboard Layout Structure */
+        .app-wrapper { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; }
+        .content-workspace { flex: 1; padding: 30px; overflow-y: auto; }
+
+        .sidebar-brand { font-size: 1.25rem; font-weight: bold; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; color: var(--accent-color); }
+        .user-profile-badge { padding: 12px; background: var(--bg-card); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; }
+        .sidebar-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .nav-item { padding: 12px; border-radius: 6px; text-decoration: none; color: var(--text-secondary); display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background: var(--bg-card); color: var(--text-primary); }
+
+        /* Panels & KPI Cards */
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px; flex-wrap: wrap; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .kpi-card { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; }
+        .kpi-card h2 { font-size: 2rem; color: var(--accent-color); margin-top: 5px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .chart-container { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 300px; }
+
+        /* Tables & Inputs */
+        .table-wrapper { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; width: 100%; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        th, td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+        th { background-color: rgba(0,0,0,0.05); color: var(--text-secondary); font-weight: 600; }
+        .action-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        input[type="text"], input[type="email"], input[type="password"] { padding: 10px 14px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); }
+        button { padding: 10px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.15s; }
+        .btn-primary { background: var(--accent-color); color: #fff; }
+        .btn-secondary { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .btn-danger-outline { background: transparent; border: 1px solid var(--accent-error); color: var(--accent-error); }
+
+        /* Badges */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .status-planning { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
+        .status-loaded { background: rgba(16, 185, 129, 0.2); color: var(--accent-success); }
+        .status-transit { background: rgba(59, 130, 246, 0.2); color: var(--accent-color); }
+
+        /* Auth Screen Styling */
+        .auth-wrapper { height: 100vh; display: flex; justify-content: center; align-items: center; background: var(--bg-main); }
+        .auth-card { background: var(--bg-card); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .auth-card h2 { margin-bottom: 24px; text-align: center; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+
+        @media (max-width: 1024px) {
+            .app-wrapper { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <div id="auth-container" class="auth-wrapper">
+        <div class="auth-card">
+            <h2><i class="fa-solid fa-truck-ramp-box"></i> LogiTrack Login</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="auth-email" required placeholder="name@company.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••">
+                </div>
+                <div class="auth-options">
+                    <label><input type="checkbox" id="remember-me"> Remember Me</label>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%; margin-top:15px;">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-container" class="app-wrapper hidden">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-xl fa-truck-fast"></i> <span>LogiTrack v2.0</span>
+            </div>
+            <div class="user-profile-badge">
+                <span id="user-display-name">Loading...</span>
+                <small id="user-display-role">Role</small>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="#" class="nav-item active" data-target="mgmt-screen"><i class="fa-solid fa-chart-pie"></i> Executive Dashboard</a>
+                <a href="#" class="nav-item" data-target="raw-data-screen"><i class="fa-solid fa-table"></i> Raw Data Master</a>
+                <a href="#" class="nav-item" data-target="ops-screen"><i class="fa-solid fa-display"></i> Operational Monitor</a>
+            </nav>
+            <div class="sidebar-footer" style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+                <button id="theme-toggle-btn" class="btn-secondary"><i class="fa-solid fa-sun"></i> Toggle Theme</button>
+                <button id="logout-btn" class="btn-danger-outline"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</button>
+            </div>
+        </aside>
+
+        <main class="content-workspace">
+            <section id="mgmt-screen" class="view-panel">
+                <header class="panel-header"><h1>Executive Dashboard</h1></header>
+                <div class="kpi-grid">
+                    <div class="kpi-card"><small>Total Deliveries</small><h2 id="kpi-total">0</h2></div>
+                    <div class="kpi-card"><small>Picked</small><h2 id="kpi-picked">0</h2></div>
+                    <div class="kpi-card"><small>PGI Complete</small><h2 id="kpi-pgi">0</h2></div>
+                    <div class="kpi-card"><small>Invoiced</small><h2 id="kpi-invoiced">0</h2></div>
+                    <div class="kpi-card"><small>Loaded</small><h2 id="kpi-loaded">0</h2></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-container"><canvas id="statusChart"></canvas></div>
+                </div>
+            </section>
+
+            <section id="raw-data-screen" class="view-panel hidden">
+                <header class="panel-header">
+                    <h1>Raw Data Management Table</h1>
+                    <div class="action-bar">
+                        <input type="text" id="table-search" placeholder="Search Master Records...">
+                        <input type="file" id="import-excel-input" accept=".xlsx, .xls" class="hidden">
+                        <button class="btn-secondary" onclick="document.getElementById('import-excel-input').click()"><i class="fa-solid fa-file-import"></i> Import Excel</button>
+                    </div>
+                </header>
+                <div class="table-wrapper">
+                    <table id="master-delivery-table">
+                        <thead>
+                            <tr>
+                                <th>Delivery ID</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Route</th>
+                                <th>Truck Status</th>
+                                <th>Picked</th>
+                                <th>PGI</th>
+                                <th>Invoiced</th>
+                                <th>DS Print</th>
+                                <th>Pulled</th>
+                                <th>Checked</th>
+                                <th>Loaded</th>
+                            </tr>
+                        </thead>
+                        <tbody id="master-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="ops-screen" class="view-panel hidden">
+                <header class="panel-header"><h1>Operational Live Monitor (30s auto-refresh)</h1></header>
+                <div class="operational-grid" id="ops-monitor-cards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;"></div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://lqgakuegqnfcpzydptbh.supabase.co/rest/v1/";
+        const SUPABASE_ANON_KEY = "sb_publishable_KcN0pj5Cxls0F0hAb8Ar_w_MbKdbbJG";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let deliveryDataCache = [];
+        let chartInstances = {};
+        const WORKFLOW_STEPS = ['picked', 'pgi', 'invoiced', 'ds_printing', 'pulled', 'checked', 'loaded'];
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            initViewSwitchers();
+            initThemeEngine();
+            setupFormListeners();
+            checkActiveSession();
+        });
+
+        async function checkActiveSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) processUserMetadata(session.user);
+        }
+
+        async function processUserMetadata(authUser) {
+            const { data: userProfile } = await supabase.from('users').select('*').eq('id', authUser.id).single();
+            if (!userProfile) return;
+            currentUser = userProfile;
+            document.getElementById("user-display-name").innerText = currentUser.username;
+            document.getElementById("user-display-role").innerText = currentUser.role;
+            toggleViewports(true);
+            fetchMasterRecords();
+            initRealtimeSub();
+        }
+
+        async function handleWorkflowToggle(recordId, stepField, currentState, checkboxElement) {
+            if (!currentUser) return;
+            if (currentState === true && currentUser.role !== 'ADMIN') {
+                alert("Workflow Lock: Checked steps can only be undone by an ADMIN.");
+                checkboxElement.checked = true;
+                return;
+            }
+            if (!verifyRolePermission(currentUser.role, stepField)) {
+                alert(`Access Denied: Your role [${currentUser.role}] cannot alter ${stepField}.`);
+                checkboxElement.checked = currentState;
+                return;
+            }
+
+            const nextState = !currentState;
+            const payload = {
+                [`is_${stepField}`]: nextState,
+                [`${stepField}_by`]: nextState ? currentUser.username : null,
+                [`${stepField}_at`]: nextState ? new Date().toISOString() : null
+            };
+
+            if (stepField === 'loaded' && nextState) payload.truck_status = 'Loaded';
+            else if (stepField === 'picked' && nextState) payload.truck_status = 'Loading';
+
+            await supabase.from('deliveries').update(payload).eq('id', recordId);
+        }
+
+        function verifyRolePermission(role, stepField) {
+            if (role === 'ADMIN') return true;
+            if (role === 'PGI USER' && stepField === 'pgi') return true;
+            if (role === 'AR USER' && stepField === 'invoiced') return true;
+            if (role === 'TRANSPORTER') return ['picked', 'ds_printing', 'pulled', 'checked', 'loaded'].includes(stepField);
+            return false;
+        }
+
+        async function fetchMasterRecords() {
+            const { data } = await supabase.from('deliveries').select('*').order('delivery_date', { ascending: false });
+            if (data) {
+                deliveryDataCache = data;
+                renderMasterTable(data);
+                renderOperationalView(data);
+                renderExecutiveDashboardMetrics(data);
+            }
+        }
+
+        function initRealtimeSub() {
+            supabase.channel('deliveries_realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'deliveries' }, () => { fetchMasterRecords(); })
+                .subscribe();
+        }
+
+        function renderMasterTable(dataset) {
+            const tbody = document.getElementById("master-table-body");
+            tbody.innerHTML = "";
+            dataset.forEach(row => {
+                const tr = document.createElement("tr");
+                let checkboxHTML = "";
+                WORKFLOW_STEPS.forEach(step => {
+                    const isChecked = row[`is_${step}`];
+                    const isDisabled = (isChecked && currentUser.role !== 'ADMIN') ? 'disabled' : '';
+                    checkboxHTML += `<td style="text-align:center;"><input type="checkbox" ${isChecked ? 'checked' : ''} ${isDisabled} onchange="handleWorkflowToggle('${row.id}', '${step}', ${isChecked}, this)"></td>`;
+                });
+                tr.innerHTML = `<td><strong>${row.delivery_number}</strong></td><td>${row.delivery_date}</td><td>${row.customer_name}</td><td>${row.route}</td><td><span class="badge ${getStatusBadgeClass(row.truck_status)}">${row.truck_status}</span></td>${checkboxHTML}`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderOperationalView(dataset) {
+            const container = document.getElementById("ops-monitor-cards");
+            container.innerHTML = "";
+            dataset.forEach(row => {
+                const div = document.createElement("div");
+                div.className = "kpi-card";
+                div.style.textAlign = "left";
+                div.innerHTML = `<h3>${row.delivery_number}</h3><p><small>Route:</small> ${row.route}</p><div style="margin-top:10px;"><span class="badge ${getStatusBadgeClass(row.truck_status)}">${row.truck_status}</span></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function renderExecutiveDashboardMetrics(dataset) {
+            document.getElementById("kpi-total").innerText = dataset.length;
+            document.getElementById("kpi-picked").innerText = dataset.filter(d => d.is_picked).length;
+            document.getElementById("kpi-pgi").innerText = dataset.filter(d => d.is_pgi).length;
+            document.getElementById("kpi-invoiced").innerText = dataset.filter(d => d.is_invoiced).length;
+            document.getElementById("kpi-loaded").innerText = dataset.filter(d => d.is_loaded).length;
+            renderCharts(dataset);
+        }
+
+        function renderCharts(dataset) {
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            if (chartInstances['status']) chartInstances['status'].destroy();
+            const counts = {};
+            dataset.forEach(d => counts[d.truck_status] = (counts[d.truck_status] || 0) + 1);
+            chartInstances['status'] = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        document.getElementById("import-excel-input").addEventListener("change", function(e) {
+            if (currentUser.role !== 'ADMIN') return;
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                for (const row of rows) {
+                    await supabase.from('deliveries').insert([{
+                        delivery_number: String(row['Delivery ID'] || row['delivery_number']),
+                        delivery_date: row['Date'] || new Date().toISOString().split('T')[0],
+                        customer_name: row['Customer'] || 'Unknown Client',
+                        route: row['Route'] || 'Domestic'
+                    }]);
+                }
+                fetchMasterRecords();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function getStatusBadgeClass(status) { return status === 'Loaded' ? 'status-loaded' : status === 'In Transit' ? 'status-transit' : 'status-planning'; }
+        function initThemeEngine() { document.getElementById("theme-toggle-btn").addEventListener("click", () => document.body.classList.toggle("light-mode")); }
+        function toggleViewports(isLoggedIn) { document.getElementById("auth-container").classList.toggle("hidden", isLoggedIn); document.getElementById("app-container").classList.toggle("hidden", !isLoggedIn); }
+        function initViewSwitchers() { document.querySelectorAll(".nav-item").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active")); document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden")); btn.classList.add("active"); document.getElementById(btn.dataset.target).classList.remove("hidden"); }); }); }
+        function setupFormListeners() {
+            document.getElementById("login-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const { data, error } = await supabase.auth.signInWithPassword({ email: document.getElementById("auth-email").value, password: document.getElementById("auth-password").value });
+                if (error) alert(error.message); else processUserMetadata(data.user);
+            });
+            document.getElementById("logout-btn").addEventListener("click", async () => { await supabase.auth.signOut(); currentUser = null; toggleViewports(false); });
+        }
+    </script>
+</body>
+</html>
